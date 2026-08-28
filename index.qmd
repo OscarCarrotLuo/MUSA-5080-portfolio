@@ -2,7 +2,7 @@
 title: "Home"
 ---
 
-# YOUR NAME HERE {#welcome}
+# Oscar Luo {#welcome}
 
 <!-- CHANGE THIS: replace with your own name above -->
 
@@ -28,7 +28,5 @@ I'm a student in the MUSA program at Penn. My background is in
 
 ## Get in Touch
 
-<!-- CHANGE THIS -->
-
-- Email: your-email@upenn.edu
-- GitHub: [@your-username](https://github.com/your-username)
+- Email: oscarluo@upenn.edu
+- GitHub: [@OscarCarrotLuo](https://github.com/OscarCarrotLuo)

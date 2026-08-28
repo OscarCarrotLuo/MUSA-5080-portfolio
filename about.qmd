@@ -4,22 +4,16 @@ title: "About Me"
 
 ## Background
 
-<!-- CHANGE THIS -->
-
-Write a few paragraphs about yourself here: where you came from before MUSA,
-what drew you to urban spatial analytics, and what you're hoping to do with it.
+Hello my name is Oscar. I graduted from Syracuse School of Architecture and now I am MUSA student in University of Pennsylvania. This website shows my progress of the course MUSA 5080.
 
 ## Skills
 
-<!-- CHANGE THIS: update this through the semester as it becomes true -->
-
-- **Languages & Tools:** R, Quarto, Git
-- **Spatial:** (add as you learn)
+- **Languages & Tools:** R, Quarto, Git, Python
+- **Spatial:** ArcGIS, QGIS
 - **Data:** US Census / ACS via `tidycensus`
 
 ## Contact
 
-<!-- CHANGE THIS -->
-
-- Email: your-email@upenn.edu
-- GitHub: [@your-username](https://github.com/your-username)
+- Study Email: oscarluo@upenn.edu
+- Personal Email: oscar.pr.luo@gmail.com
+- GitHub: [@OscarCarrotLuo](https://github.com/OscarCarrotLuo)
