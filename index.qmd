@@ -2,6 +2,8 @@
 title: "Home"
 ---
 
+![](images/Oscar Luo.jpg){width=180px}
+
 # Oscar Luo {#welcome}
 
 Welcome to my portfolio for **MUSA 5080: Public Policy Analytics** at the
