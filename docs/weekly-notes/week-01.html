@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="dcterms.date" content="2026-08-28">
-<meta name="description" content="First impressions, and getting the workflow running.">
+<meta name="description" content="Quarto, project files, Git, GitHub, and the portfolio publishing workflow.">
 
 <title>Week 1: Getting Set Up – Oscar Luo - MUSA 5080 Portfolio</title>
 <style>
@@ -82,7 +82,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-41c0af10908d7b098ac936763e582917.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-9d96f532d65220ca877c0304385df42f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -150,7 +150,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/YOUR-USERNAME-HERE/MUSA-5080-portfolio"> <i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/OscarCarrotLuo/MUSA-5080-portfolio"> <i class="bi bi-github" role="img">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -172,6 +172,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#what-we-did" id="toc-what-we-did" class="nav-link active" data-scroll-target="#what-we-did">What We Did</a></li>
   <li><a href="#key-concepts" id="toc-key-concepts" class="nav-link" data-scroll-target="#key-concepts">Key Concepts</a></li>
+  <li><a href="#notes" id="toc-notes" class="nav-link" data-scroll-target="#notes">Notes</a>
+  <ul class="collapse">
+  <li><a href="#what-is-a-website" id="toc-what-is-a-website" class="nav-link" data-scroll-target="#what-is-a-website">1. What is a website?</a></li>
+  <li><a href="#quarto-and-render" id="toc-quarto-and-render" class="nav-link" data-scroll-target="#quarto-and-render">2. Quarto and Render</a></li>
+  <li><a href="#anatomy-of-a-.qmd-file" id="toc-anatomy-of-a-.qmd-file" class="nav-link" data-scroll-target="#anatomy-of-a-.qmd-file">3. Anatomy of a <code>.qmd</code> file</a></li>
+  <li><a href="#files-and-folders" id="toc-files-and-folders" class="nav-link" data-scroll-target="#files-and-folders">4. Files and folders</a></li>
+  <li><a href="#why-index.qmd-matters" id="toc-why-index.qmd-matters" class="nav-link" data-scroll-target="#why-index.qmd-matters">5. Why <code>index.qmd</code> matters</a></li>
+  <li><a href="#git-github.com-and-github-desktop" id="toc-git-github.com-and-github-desktop" class="nav-link" data-scroll-target="#git-github.com-and-github-desktop">6. Git, GitHub.com, and GitHub Desktop</a></li>
+  <li><a href="#the-portfolio-workflow" id="toc-the-portfolio-workflow" class="nav-link" data-scroll-target="#the-portfolio-workflow">7. The portfolio workflow</a></li>
+  <li><a href="#markdown-r-scripts-and-quarto-documents" id="toc-markdown-r-scripts-and-quarto-documents" class="nav-link" data-scroll-target="#markdown-r-scripts-and-quarto-documents">8. Markdown, R scripts, and Quarto documents</a></li>
+  </ul></li>
   <li><a href="#proving-r-works" id="toc-proving-r-works" class="nav-link" data-scroll-target="#proving-r-works">Proving R Works</a></li>
   <li><a href="#reflection" id="toc-reflection" class="nav-link" data-scroll-target="#reflection">Reflection</a></li>
   <li><a href="#questions-i-still-have" id="toc-questions-i-still-have" class="nav-link" data-scroll-target="#questions-i-still-have">Questions I Still Have</a></li>
@@ -188,7 +199,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <div>
   <div class="description">
-    First impressions, and getting the workflow running.
+    Quarto, project files, Git, GitHub, and the portfolio publishing workflow.
   </div>
 </div>
 
@@ -213,40 +224,187 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="what-we-did" class="level2">
 <h2 class="anchored" data-anchor-id="what-we-did">What We Did</h2>
-<!-- CHANGE THIS: replace with your own notes -->
-<p>Set up the portfolio workflow: made a repository from a template, cloned it with GitHub Desktop, edited files in RStudio, rendered with Quarto, and published to GitHub Pages.</p>
+<p>We set up the portfolio workflow: created a repository from a template, cloned it with GitHub Desktop, edited source files in RStudio, rendered the site with Quarto, and published the output through GitHub Pages.</p>
 </section>
 <section id="key-concepts" class="level2">
 <h2 class="anchored" data-anchor-id="key-concepts">Key Concepts</h2>
-<p>Three places a file can live:</p>
+<ul>
+<li>A website needs files, usually HTML, and a server that makes those files available online.</li>
+<li>Quarto converts <code>.qmd</code> source files into <code>.html</code> pages.</li>
+<li>Saving a source file, rendering a site, committing a snapshot, and pushing to GitHub are separate actions.</li>
+<li>A <code>.qmd</code> file can combine YAML metadata, Markdown writing, executable R code, and rendered results.</li>
+<li>Source files are edited by people; output and cache files are generated by tools.</li>
+</ul>
+</section>
+<section id="notes" class="level2">
+<h2 class="anchored" data-anchor-id="notes">Notes</h2>
+<section id="what-is-a-website" class="level3">
+<h3 class="anchored" data-anchor-id="what-is-a-website">1. What is a website?</h3>
+<p>In the class workflow, a website has two main parts:</p>
+<pre class="text"><code>a folder of HTML files + a server that is always online</code></pre>
+<p>For this portfolio:</p>
+<pre class="text"><code>Quarto creates the HTML files
+GitHub Pages hosts those files online</code></pre>
+<p>The complete path from source to website is:</p>
+<pre class="text"><code>.qmd source file -&gt; Quarto Render -&gt; .html page -&gt; GitHub Pages</code></pre>
+<p>I normally edit the <code>.qmd</code> source rather than the generated <code>.html</code> file.</p>
+</section>
+<section id="quarto-and-render" class="level3">
+<h3 class="anchored" data-anchor-id="quarto-and-render">2. Quarto and Render</h3>
+<p>Quarto is a publishing system that combines writing, code, and results in one document. It can render a <code>.qmd</code> file as a webpage, PDF, slide deck, or Word document.</p>
+<p>When I select <strong>Render</strong>, Quarto:</p>
 <ol type="1">
-<li><strong>My computer</strong> — where I edit</li>
-<li><strong>GitHub.com</strong> — where it’s stored</li>
-<li><strong>My live site</strong> — what the world sees</li>
+<li>Reads the <code>.qmd</code> file from top to bottom.</li>
+<li>Finds executable code chunks.</li>
+<li>Sends R code to R and receives the results.</li>
+<li>Combines the writing, code, and output into HTML.</li>
 </ol>
-<p>The loop: <strong>Edit → Save → Render → Commit → Push → wait → refresh</strong></p>
+<p>Saving only records edits in the source file. Rendering rebuilds the output page, so <strong>Save is not Render</strong>.</p>
+</section>
+<section id="anatomy-of-a-.qmd-file" class="level3">
+<h3 class="anchored" data-anchor-id="anatomy-of-a-.qmd-file">3. Anatomy of a <code>.qmd</code> file</h3>
+<p>A Quarto document normally contains three parts:</p>
+<pre class="text"><code>YAML header + Markdown text + R code chunks</code></pre>
+<section id="yaml-header" class="level4">
+<h4 class="anchored" data-anchor-id="yaml-header">YAML header</h4>
+<p>The YAML header goes at the very top and stores page metadata:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> </span><span class="st">"Week 1: Getting Set Up"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"My first weekly note"</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> 2026-08-28</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Important YAML rules:</p>
+<ul>
+<li>The opening and closing <code>---</code> lines matter.</li>
+<li>A colon must be followed by a space.</li>
+<li>Dates should use <code>YYYY-MM-DD</code>.</li>
+<li>Use plain quotation marks.</li>
+</ul>
+</section>
+<section id="markdown" class="level4">
+<h4 class="anchored" data-anchor-id="markdown">Markdown</h4>
+<p>Markdown provides headings, paragraphs, lists, emphasis, and links:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">## What I Learned</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>This is a paragraph with a <span class="co">[</span><span class="ot">link</span><span class="co">](https://quarto.org/)</span>.</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>First point</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Second point</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="r-code-chunks" class="level4">
+<h4 class="anchored" data-anchor-id="r-code-chunks">R code chunks</h4>
+<p>An executable R chunk in a Quarto file uses an opening fence labeled <code>{r}</code>. The code inside a chunk might look like this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidycensus)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(x)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>R code should be placed inside a code chunk when I want Quarto to run it and include the result in the page.</p>
+</section>
+</section>
+<section id="files-and-folders" class="level3">
+<h3 class="anchored" data-anchor-id="files-and-folders">4. Files and folders</h3>
+<p>A useful question is: <strong>Who is this file for?</strong></p>
+<p>Files I edit directly:</p>
+<pre class="text"><code>index.qmd
+about.qmd
+weekly-notes/*.qmd
+assignments/*.qmd
+_quarto.yml</code></pre>
+<p>Files and folders mainly used by software:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Item</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>.Rproj</code></td>
+<td>Opens the folder as an RStudio project</td>
+</tr>
+<tr class="even">
+<td><code>.gitignore</code></td>
+<td>Tells Git which files not to track</td>
+</tr>
+<tr class="odd">
+<td><code>.Renviron</code></td>
+<td>Stores environment variables and secrets such as API keys</td>
+</tr>
+<tr class="even">
+<td><code>docs/</code></td>
+<td>Contains the rendered website published by GitHub Pages</td>
+</tr>
+<tr class="odd">
+<td><code>_freeze/</code></td>
+<td>Stores Quarto execution results and cache data</td>
+</tr>
+</tbody>
+</table>
+<p>The key rule is: edit source files and allow Quarto to regenerate output files.</p>
+</section>
+<section id="why-index.qmd-matters" class="level3">
+<h3 class="anchored" data-anchor-id="why-index.qmd-matters">5. Why <code>index.qmd</code> matters</h3>
+<p>Web servers normally look for <code>index.html</code> when a visitor requests a folder URL. Quarto creates that file from <code>index.qmd</code>:</p>
+<pre class="text"><code>index.qmd -&gt; Render -&gt; docs/index.html</code></pre>
+<p>That is why the portfolio homepage source file is named <code>index.qmd</code>.</p>
+</section>
+<section id="git-github.com-and-github-desktop" class="level3">
+<h3 class="anchored" data-anchor-id="git-github.com-and-github-desktop">6. Git, GitHub.com, and GitHub Desktop</h3>
+<p>These tools are related but have different roles:</p>
+<ul>
+<li><strong>Git</strong> is the version-control system running locally on my computer.</li>
+<li><strong>GitHub.com</strong> stores an online copy of the repository.</li>
+<li><strong>GitHub Desktop</strong> provides buttons and menus that send commands to Git.</li>
+</ul>
+<p>Commit and push are also different:</p>
+<pre class="text"><code>Commit = save a labeled snapshot in the local Git repository
+Push   = send local commits to GitHub.com</code></pre>
+</section>
+<section id="the-portfolio-workflow" class="level3">
+<h3 class="anchored" data-anchor-id="the-portfolio-workflow">7. The portfolio workflow</h3>
+<pre class="text"><code>Edit -&gt; Save -&gt; Render -&gt; Commit -&gt; Push -&gt; wait -&gt; refresh the live site</code></pre>
+<p>Each step changes a different version of the work:</p>
+<ol type="1">
+<li><strong>Edit and Save:</strong> update the local source file.</li>
+<li><strong>Render:</strong> rebuild the local website output.</li>
+<li><strong>Commit:</strong> record a labeled local snapshot.</li>
+<li><strong>Push:</strong> transfer commits to GitHub.com.</li>
+<li><strong>Refresh:</strong> check the published GitHub Pages site.</li>
+</ol>
+</section>
+<section id="markdown-r-scripts-and-quarto-documents" class="level3">
+<h3 class="anchored" data-anchor-id="markdown-r-scripts-and-quarto-documents">8. Markdown, R scripts, and Quarto documents</h3>
+<pre class="text"><code>Markdown text = writing and formatting, without calculation
+R script      = reusable code
+.qmd document = writing + code + results</code></pre>
+<p>An R script is useful for experimenting with code and building reusable analysis. A <code>.qmd</code> document is useful when I need to explain the analysis and publish its results together.</p>
+</section>
 </section>
 <section id="proving-r-works" class="level2">
 <h2 class="anchored" data-anchor-id="proving-r-works">Proving R Works</h2>
-<p>The chunk below runs when this page renders. If you can see a result underneath it on your published site, R and Quarto are talking to each other correctly.</p>
+<p>The chunk below reports the version of R used by the project. If the result appears on the rendered page, R and Quarto are communicating correctly.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()<span class="sc">$</span>R.version<span class="sc">$</span>version.string</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()<span class="sc">$</span>R.version<span class="sc">$</span>version.string</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "R version 4.6.0 (2026-04-24)"</code></pre>
+<pre><code>[1] "R version 4.6.1 (2026-06-24)"</code></pre>
 </div>
 </div>
 </section>
 <section id="reflection" class="level2">
 <h2 class="anchored" data-anchor-id="reflection">Reflection</h2>
-<!-- CHANGE THIS: 3-4 sentences -->
-<p>What I want out of this course:</p>
-<p>One thing I’m nervous about:</p>
+<p>This week helped me understand that building a reproducible website is a sequence rather than a single save button. I want to become more confident using R, Quarto, Git, and GitHub to create clear public-facing work. The number of separate steps still feels unfamiliar, but repeating the workflow should make it more natural.</p>
 </section>
 <section id="questions-i-still-have" class="level2">
 <h2 class="anchored" data-anchor-id="questions-i-still-have">Questions I Still Have</h2>
 <ul>
-<li></li>
-<li></li>
+<li>When should code live in an R script instead of directly in a <code>.qmd</code> file?</li>
+<li>How does Quarto decide which output files need to be rebuilt?</li>
+<li>How is a Quarto website different from a website written directly with HTML, CSS, and JavaScript?</li>
 </ul>
 
 
@@ -706,51 +864,225 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
   });
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 1: Getting Set Up"</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "First impressions, and getting the workflow running."</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-08-28</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- CHANGE THIS: replace with your own notes --&gt;</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>Set up the portfolio workflow: made a repository from a template, cloned it with</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>GitHub Desktop, edited files in RStudio, rendered with Quarto, and published to</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>GitHub Pages.</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>Three places a file can live:</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**My computer** — where I edit</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**GitHub.com** — where it's stored</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**My live site** — what the world sees</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>The loop: **Edit → Save → Render → Commit → Push → wait → refresh**</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="fu">## Proving R Works</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>The chunk below runs when this page renders. If you can see a result underneath</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>it on your published site, R and Quarto are talking to each other correctly.</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()<span class="sc">$</span>R.version<span class="sc">$</span>version.string</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- CHANGE THIS: 3-4 sentences --&gt;</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>What I want out of this course:</span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>One thing I'm nervous about:</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>-</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>-</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 1: Getting Set Up"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Quarto, project files, Git, GitHub, and the portfolio publishing workflow."</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-08-28</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>We set up the portfolio workflow: created a repository from a template, cloned it</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>with GitHub Desktop, edited source files in RStudio, rendered the site with Quarto,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>and published the output through GitHub Pages.</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A website needs files, usually HTML, and a server that makes those files available</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  online.</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Quarto converts <span class="in">`.qmd`</span> source files into <span class="in">`.html`</span> pages.</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Saving a source file, rendering a site, committing a snapshot, and pushing to</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>  GitHub are separate actions.</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A <span class="in">`.qmd`</span> file can combine YAML metadata, Markdown writing, executable R code,</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>  and rendered results.</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Source files are edited by people; output and cache files are generated by tools.</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a><span class="fu">## Notes</span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a><span class="fu">### 1. What is a website?</span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>In the class workflow, a website has two main parts:</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="in">a folder of HTML files + a server that is always online</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>For this portfolio:</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a><span class="in">Quarto creates the HTML files</span></span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a><span class="in">GitHub Pages hosts those files online</span></span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>The complete path from source to website is:</span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a><span class="in">.qmd source file -&gt; Quarto Render -&gt; .html page -&gt; GitHub Pages</span></span>
+<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>I normally edit the <span class="in">`.qmd`</span> source rather than the generated <span class="in">`.html`</span> file.</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a><span class="fu">### 2. Quarto and Render</span></span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>Quarto is a publishing system that combines writing, code, and results in one</span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>document. It can render a <span class="in">`.qmd`</span> file as a webpage, PDF, slide deck, or Word</span>
+<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a>document.</span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>When I select **Render**, Quarto:</span>
+<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Reads the <span class="in">`.qmd`</span> file from top to bottom.</span>
+<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Finds executable code chunks.</span>
+<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Sends R code to R and receives the results.</span>
+<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Combines the writing, code, and output into HTML.</span>
+<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a>Saving only records edits in the source file. Rendering rebuilds the output page,</span>
+<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a>so **Save is not Render**.</span>
+<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a><span class="fu">### 3. Anatomy of a `.qmd` file</span></span>
+<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a>A Quarto document normally contains three parts:</span>
+<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a><span class="in">YAML header + Markdown text + R code chunks</span></span>
+<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a><span class="fu">#### YAML header</span></span>
+<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a>The YAML header goes at the very top and stores page metadata:</span>
+<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a><span class="in">```yaml</span></span>
+<span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> </span><span class="st">"Week 1: Getting Set Up"</span></span>
+<span id="cb15-80"><a href="#cb15-80" aria-hidden="true" tabindex="-1"></a><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"My first weekly note"</span></span>
+<span id="cb15-81"><a href="#cb15-81" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> 2026-08-28</span></span>
+<span id="cb15-82"><a href="#cb15-82" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb15-83"><a href="#cb15-83" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-84"><a href="#cb15-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-85"><a href="#cb15-85" aria-hidden="true" tabindex="-1"></a>Important YAML rules:</span>
+<span id="cb15-86"><a href="#cb15-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-87"><a href="#cb15-87" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>The opening and closing <span class="in">`---`</span> lines matter.</span>
+<span id="cb15-88"><a href="#cb15-88" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A colon must be followed by a space.</span>
+<span id="cb15-89"><a href="#cb15-89" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Dates should use <span class="in">`YYYY-MM-DD`</span>.</span>
+<span id="cb15-90"><a href="#cb15-90" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use plain quotation marks.</span>
+<span id="cb15-91"><a href="#cb15-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-92"><a href="#cb15-92" aria-hidden="true" tabindex="-1"></a><span class="fu">#### Markdown</span></span>
+<span id="cb15-93"><a href="#cb15-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-94"><a href="#cb15-94" aria-hidden="true" tabindex="-1"></a>Markdown provides headings, paragraphs, lists, emphasis, and links:</span>
+<span id="cb15-95"><a href="#cb15-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-96"><a href="#cb15-96" aria-hidden="true" tabindex="-1"></a><span class="in">```markdown</span></span>
+<span id="cb15-97"><a href="#cb15-97" aria-hidden="true" tabindex="-1"></a><span class="fu">## What I Learned</span></span>
+<span id="cb15-98"><a href="#cb15-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-99"><a href="#cb15-99" aria-hidden="true" tabindex="-1"></a>This is a paragraph with a <span class="co">[</span><span class="ot">link</span><span class="co">](https://quarto.org/)</span>.</span>
+<span id="cb15-100"><a href="#cb15-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-101"><a href="#cb15-101" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>First point</span>
+<span id="cb15-102"><a href="#cb15-102" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Second point</span>
+<span id="cb15-103"><a href="#cb15-103" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-104"><a href="#cb15-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-105"><a href="#cb15-105" aria-hidden="true" tabindex="-1"></a><span class="in">#### R code chunks</span></span>
+<span id="cb15-106"><a href="#cb15-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-107"><a href="#cb15-107" aria-hidden="true" tabindex="-1"></a><span class="in">An executable R chunk in a Quarto file uses an opening fence labeled `{r}`. The</span></span>
+<span id="cb15-108"><a href="#cb15-108" aria-hidden="true" tabindex="-1"></a><span class="in">code inside a chunk might look like this:</span></span>
+<span id="cb15-109"><a href="#cb15-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-110"><a href="#cb15-110" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-111"><a href="#cb15-111" aria-hidden="true" tabindex="-1"></a><span class="in">library(tidycensus)</span></span>
+<span id="cb15-112"><a href="#cb15-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-113"><a href="#cb15-113" aria-hidden="true" tabindex="-1"></a><span class="in">x &lt;- 2 + 2</span></span>
+<span id="cb15-114"><a href="#cb15-114" aria-hidden="true" tabindex="-1"></a><span class="in">print(x)</span></span>
+<span id="cb15-115"><a href="#cb15-115" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-116"><a href="#cb15-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-117"><a href="#cb15-117" aria-hidden="true" tabindex="-1"></a>R code should be placed inside a code chunk when I want Quarto to run it and</span>
+<span id="cb15-118"><a href="#cb15-118" aria-hidden="true" tabindex="-1"></a>include the result in the page.</span>
+<span id="cb15-119"><a href="#cb15-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-120"><a href="#cb15-120" aria-hidden="true" tabindex="-1"></a><span class="fu">### 4. Files and folders</span></span>
+<span id="cb15-121"><a href="#cb15-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-122"><a href="#cb15-122" aria-hidden="true" tabindex="-1"></a>A useful question is: **Who is this file for?**</span>
+<span id="cb15-123"><a href="#cb15-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-124"><a href="#cb15-124" aria-hidden="true" tabindex="-1"></a>Files I edit directly:</span>
+<span id="cb15-125"><a href="#cb15-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-126"><a href="#cb15-126" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-127"><a href="#cb15-127" aria-hidden="true" tabindex="-1"></a><span class="in">index.qmd</span></span>
+<span id="cb15-128"><a href="#cb15-128" aria-hidden="true" tabindex="-1"></a><span class="in">about.qmd</span></span>
+<span id="cb15-129"><a href="#cb15-129" aria-hidden="true" tabindex="-1"></a><span class="in">weekly-notes/*.qmd</span></span>
+<span id="cb15-130"><a href="#cb15-130" aria-hidden="true" tabindex="-1"></a><span class="in">assignments/*.qmd</span></span>
+<span id="cb15-131"><a href="#cb15-131" aria-hidden="true" tabindex="-1"></a><span class="in">_quarto.yml</span></span>
+<span id="cb15-132"><a href="#cb15-132" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-133"><a href="#cb15-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-134"><a href="#cb15-134" aria-hidden="true" tabindex="-1"></a>Files and folders mainly used by software:</span>
+<span id="cb15-135"><a href="#cb15-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-136"><a href="#cb15-136" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Item <span class="pp">|</span> Purpose <span class="pp">|</span></span>
+<span id="cb15-137"><a href="#cb15-137" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb15-138"><a href="#cb15-138" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`.Rproj`</span> <span class="pp">|</span> Opens the folder as an RStudio project <span class="pp">|</span></span>
+<span id="cb15-139"><a href="#cb15-139" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`.gitignore`</span> <span class="pp">|</span> Tells Git which files not to track <span class="pp">|</span></span>
+<span id="cb15-140"><a href="#cb15-140" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`.Renviron`</span> <span class="pp">|</span> Stores environment variables and secrets such as API keys <span class="pp">|</span></span>
+<span id="cb15-141"><a href="#cb15-141" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`docs/`</span> <span class="pp">|</span> Contains the rendered website published by GitHub Pages <span class="pp">|</span></span>
+<span id="cb15-142"><a href="#cb15-142" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`_freeze/`</span> <span class="pp">|</span> Stores Quarto execution results and cache data <span class="pp">|</span></span>
+<span id="cb15-143"><a href="#cb15-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-144"><a href="#cb15-144" aria-hidden="true" tabindex="-1"></a>The key rule is: edit source files and allow Quarto to regenerate output files.</span>
+<span id="cb15-145"><a href="#cb15-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-146"><a href="#cb15-146" aria-hidden="true" tabindex="-1"></a><span class="fu">### 5. Why `index.qmd` matters</span></span>
+<span id="cb15-147"><a href="#cb15-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-148"><a href="#cb15-148" aria-hidden="true" tabindex="-1"></a>Web servers normally look for <span class="in">`index.html`</span> when a visitor requests a folder URL.</span>
+<span id="cb15-149"><a href="#cb15-149" aria-hidden="true" tabindex="-1"></a>Quarto creates that file from <span class="in">`index.qmd`</span>:</span>
+<span id="cb15-150"><a href="#cb15-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-151"><a href="#cb15-151" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-152"><a href="#cb15-152" aria-hidden="true" tabindex="-1"></a><span class="in">index.qmd -&gt; Render -&gt; docs/index.html</span></span>
+<span id="cb15-153"><a href="#cb15-153" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-154"><a href="#cb15-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-155"><a href="#cb15-155" aria-hidden="true" tabindex="-1"></a>That is why the portfolio homepage source file is named <span class="in">`index.qmd`</span>.</span>
+<span id="cb15-156"><a href="#cb15-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-157"><a href="#cb15-157" aria-hidden="true" tabindex="-1"></a><span class="fu">### 6. Git, GitHub.com, and GitHub Desktop</span></span>
+<span id="cb15-158"><a href="#cb15-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-159"><a href="#cb15-159" aria-hidden="true" tabindex="-1"></a>These tools are related but have different roles:</span>
+<span id="cb15-160"><a href="#cb15-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-161"><a href="#cb15-161" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Git** is the version-control system running locally on my computer.</span>
+<span id="cb15-162"><a href="#cb15-162" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**GitHub.com** stores an online copy of the repository.</span>
+<span id="cb15-163"><a href="#cb15-163" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**GitHub Desktop** provides buttons and menus that send commands to Git.</span>
+<span id="cb15-164"><a href="#cb15-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-165"><a href="#cb15-165" aria-hidden="true" tabindex="-1"></a>Commit and push are also different:</span>
+<span id="cb15-166"><a href="#cb15-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-167"><a href="#cb15-167" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-168"><a href="#cb15-168" aria-hidden="true" tabindex="-1"></a><span class="in">Commit = save a labeled snapshot in the local Git repository</span></span>
+<span id="cb15-169"><a href="#cb15-169" aria-hidden="true" tabindex="-1"></a><span class="in">Push   = send local commits to GitHub.com</span></span>
+<span id="cb15-170"><a href="#cb15-170" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-171"><a href="#cb15-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-172"><a href="#cb15-172" aria-hidden="true" tabindex="-1"></a><span class="fu">### 7. The portfolio workflow</span></span>
+<span id="cb15-173"><a href="#cb15-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-174"><a href="#cb15-174" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-175"><a href="#cb15-175" aria-hidden="true" tabindex="-1"></a><span class="in">Edit -&gt; Save -&gt; Render -&gt; Commit -&gt; Push -&gt; wait -&gt; refresh the live site</span></span>
+<span id="cb15-176"><a href="#cb15-176" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-177"><a href="#cb15-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-178"><a href="#cb15-178" aria-hidden="true" tabindex="-1"></a>Each step changes a different version of the work:</span>
+<span id="cb15-179"><a href="#cb15-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-180"><a href="#cb15-180" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Edit and Save:** update the local source file.</span>
+<span id="cb15-181"><a href="#cb15-181" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Render:** rebuild the local website output.</span>
+<span id="cb15-182"><a href="#cb15-182" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Commit:** record a labeled local snapshot.</span>
+<span id="cb15-183"><a href="#cb15-183" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Push:** transfer commits to GitHub.com.</span>
+<span id="cb15-184"><a href="#cb15-184" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Refresh:** check the published GitHub Pages site.</span>
+<span id="cb15-185"><a href="#cb15-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-186"><a href="#cb15-186" aria-hidden="true" tabindex="-1"></a><span class="fu">### 8. Markdown, R scripts, and Quarto documents</span></span>
+<span id="cb15-187"><a href="#cb15-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-188"><a href="#cb15-188" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb15-189"><a href="#cb15-189" aria-hidden="true" tabindex="-1"></a><span class="in">Markdown text = writing and formatting, without calculation</span></span>
+<span id="cb15-190"><a href="#cb15-190" aria-hidden="true" tabindex="-1"></a><span class="in">R script      = reusable code</span></span>
+<span id="cb15-191"><a href="#cb15-191" aria-hidden="true" tabindex="-1"></a><span class="in">.qmd document = writing + code + results</span></span>
+<span id="cb15-192"><a href="#cb15-192" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-193"><a href="#cb15-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-194"><a href="#cb15-194" aria-hidden="true" tabindex="-1"></a>An R script is useful for experimenting with code and building reusable analysis.</span>
+<span id="cb15-195"><a href="#cb15-195" aria-hidden="true" tabindex="-1"></a>A <span class="in">`.qmd`</span> document is useful when I need to explain the analysis and publish its</span>
+<span id="cb15-196"><a href="#cb15-196" aria-hidden="true" tabindex="-1"></a>results together.</span>
+<span id="cb15-197"><a href="#cb15-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-198"><a href="#cb15-198" aria-hidden="true" tabindex="-1"></a><span class="fu">## Proving R Works</span></span>
+<span id="cb15-199"><a href="#cb15-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-200"><a href="#cb15-200" aria-hidden="true" tabindex="-1"></a>The chunk below reports the version of R used by the project. If the result appears</span>
+<span id="cb15-201"><a href="#cb15-201" aria-hidden="true" tabindex="-1"></a>on the rendered page, R and Quarto are communicating correctly.</span>
+<span id="cb15-202"><a href="#cb15-202" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-205"><a href="#cb15-205" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb15-206"><a href="#cb15-206" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()<span class="sc">$</span>R.version<span class="sc">$</span>version.string</span>
+<span id="cb15-207"><a href="#cb15-207" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-208"><a href="#cb15-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-209"><a href="#cb15-209" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
+<span id="cb15-210"><a href="#cb15-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-211"><a href="#cb15-211" aria-hidden="true" tabindex="-1"></a>This week helped me understand that building a reproducible website is a sequence</span>
+<span id="cb15-212"><a href="#cb15-212" aria-hidden="true" tabindex="-1"></a>rather than a single save button. I want to become more confident using R, Quarto,</span>
+<span id="cb15-213"><a href="#cb15-213" aria-hidden="true" tabindex="-1"></a>Git, and GitHub to create clear public-facing work. The number of separate steps</span>
+<span id="cb15-214"><a href="#cb15-214" aria-hidden="true" tabindex="-1"></a>still feels unfamiliar, but repeating the workflow should make it more natural.</span>
+<span id="cb15-215"><a href="#cb15-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-216"><a href="#cb15-216" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
+<span id="cb15-217"><a href="#cb15-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-218"><a href="#cb15-218" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>When should code live in an R script instead of directly in a <span class="in">`.qmd`</span> file?</span>
+<span id="cb15-219"><a href="#cb15-219" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>How does Quarto decide which output files need to be rebuilt?</span>
+<span id="cb15-220"><a href="#cb15-220" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>How is a Quarto website different from a website written directly with HTML,</span>
+<span id="cb15-221"><a href="#cb15-221" aria-hidden="true" tabindex="-1"></a>  CSS, and JavaScript?</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

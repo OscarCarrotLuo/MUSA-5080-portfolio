@@ -1,27 +1,219 @@
 ---
 title: "Week 2: dplyr and Census"
-description: "table function and acs data"
+description: "Using dplyr to transform tables and tidycensus to work with ACS data."
 date: 2026-09-04
 ---
 
 ## What We Did
 
-First, we reviewed the questions, and then we had a quiz. 
+We reviewed the portfolio workflow, took a quiz, and began working with two core
+tools for public-policy data analysis:
+
+1. **dplyr**, an R package for transforming tables.
+2. **tidycensus**, an R package for downloading Census and American Community
+   Survey (ACS) data.
+
+The class connected data manipulation with an important data source: Census
+geography and ACS estimates.
 
 ## Key Concepts
 
-Three places a file can live:
+- An **object** stores a value or a table in R.
+- A **function** takes an input, performs an operation, and returns an output.
+- A **tibble** is a modern data frame: observations are rows and variables are
+  columns.
+- `dplyr` verbs make table operations readable: filter rows, select columns, create
+  variables, sort rows, and summarize groups.
+- The **Decennial Census** is a full population count every ten years; the **ACS**
+  is a continuous sample survey that publishes estimates with margins of error.
+- A **GEOID** is a geographic identifier and should be stored as text so leading
+  zeros are preserved.
 
-1. **My computer** — where I edit
-2. **GitHub.com** — where it's stored
-3. **My live site** — what the world sees
+## Notes
 
-The loop: **Edit → Save → Render → Commit → Push → wait → refresh**
+### 1. Objects, functions, arguments, and comments
+
+This example keeps counties with populations above 50,000 and stores the result in
+a new object:
+
+```r
+result <- filter(counties, population > 50000) # Keep larger counties
+```
+
+- `result` is the object that stores the output.
+- `<-` is the assignment operator.
+- `filter()` is the function.
+- `counties` is the input data.
+- `population > 50000` is an argument or condition.
+- Text after `#` is a comment and is not executed.
+
+R is case-sensitive, so `result` and `Result` are different objects. Using
+lowercase object and function names consistently prevents avoidable errors.
+
+### 2. Packages: install once, load each session
+
+A package is a collection of functions. Installation happens once on a computer;
+loading happens at the start of each new R session.
+
+```r
+# Run once on a computer
+install.packages("dplyr")
+install.packages("tidycensus")
+
+# Run in each new R session
+library(dplyr)
+library(tidycensus)
+```
+
+I think of `install.packages()` as putting a book on the shelf and `library()`
+as taking that book off the shelf to use it.
+
+### 3. Tibbles and `dplyr` verbs
+
+A tibble is a table in which each row is an observation and each column is a
+variable.
+
+| NAME | INCOME | MOE |
+|---|---:|---:|
+| Adams | 78,975 | 1,237 |
+| Berks | 74,617 | 4,372 |
+| Bucks | 104,200 | 2,374 |
+
+Common `dplyr` verbs:
+
+- `filter()` keeps rows that meet a condition.
+- `select()` keeps or reorders columns.
+- `mutate()` adds or changes a computed column.
+- `arrange()` changes row order; `desc()` requests descending order.
+- `group_by()` and `summarize()` turn many rows into group-level summaries.
+
+A correct `mutate()` expression must name the new column:
+
+```r
+counties <- counties |>
+  mutate(income_doubled = income * 2)
+```
+
+The same sequence of operations can be written step by step:
+
+```r
+step_1 <- filter(counties, moe_pct > 10)
+step_2 <- arrange(step_1, desc(moe_pct))
+step_3 <- select(step_2, NAME, moe_pct)
+```
+
+Or as one pipeline. Both `%>%` and the base-R pipe `|>` mean roughly “and
+then.”
+
+```r
+new_data <- counties |>
+  filter(moe_pct > 10) |>
+  arrange(desc(moe_pct)) |>
+  select(NAME, moe_pct)
+```
+
+Grouping allows us to calculate one value for each category:
+
+```r
+county_income |>
+  group_by(STATE) |>
+  summarize(min_income = min(INCOME))
+```
+
+### 4. Decennial Census and the ACS
+
+The two Census Bureau products answer different questions:
+
+| Product | What it provides | Important limitation |
+|---|---|---|
+| Decennial Census | A full population count every 10 years, down to Census blocks | Limited social and economic characteristics |
+| American Community Survey | Ongoing sample-based estimates for income, education, housing, commuting, and more | Every estimate includes uncertainty |
+
+Important ACS products:
+
+- **ACS 1-year:** more current, but available only for areas with populations of
+  65,000 or more.
+- **ACS 5-year:** combines five years of responses, covers small geographies, and
+  is generally more precise for tract or block-group analysis.
+- **ACS 3-year:** discontinued after the 2013 release.
+
+For ACS data, always keep two values in mind:
+
+```text
+Estimate (E)        the estimated value
+Margin of Error (M) the uncertainty around that estimate
+```
+
+### 5. Census geography and GEOIDs
+
+The basic geographic hierarchy is:
+
+```text
+state -> county -> Census tract -> block group -> Census block
+```
+
+Census tract boundaries can change over time. Block groups are available in ACS
+5-year data, but their smaller samples often produce large margins of error, so
+they should be used cautiously rather than rejected automatically. Census blocks
+are primarily associated with Decennial Census data.
+
+A tract GEOID has 11 digits. For example:
+
+```text
+42101000100
+42     = Pennsylvania state FIPS
+101    = Philadelphia County FIPS
+000100 = Census tract code
+```
+
+GEOIDs are identifiers, not quantities, so they should be stored as character
+strings:
+
+```r
+geoid <- "42101000100"
+```
+
+### 6. ACS variable codes and `tidycensus`
+
+In the raw ACS name `B19013_001E`:
+
+- `B19013` is the table number.
+- `001` is the line number.
+- `E` means estimate; `M` means margin of error.
+
+When using `tidycensus`, the variable is normally requested without the final
+`E` or `M`:
+
+```r
+library(tidycensus)
+
+county_data <- get_acs(
+  geography = "county",
+  variables = c(
+    median_income = "B19013_001",
+    total_population = "B01003_001"
+  ),
+  state = "PA",
+  year = 2023,
+  survey = "acs5",
+  output = "wide"
+)
+```
+
+### 7. Long and wide data
+
+- **Long (tidy) output:** one geography-variable combination per row, with
+  `variable`, `estimate`, and `moe` columns.
+- **Wide output:** one geographic unit per row, with separate estimate and MOE
+  columns such as `median_incomeE` and `median_incomeM`.
+
+Long format is useful for repeated operations across variables; wide format is
+often convenient for comparison, modeling, and joins.
 
 ## Proving R Works
 
-The chunk below runs when this page renders. If you can see a result underneath
-it on your published site, R and Quarto are talking to each other correctly.
+The chunk below reports the version of R used by the project. If the result appears
+on the rendered page, R and Quarto are communicating correctly.
 
 ```{r}
 sessionInfo()$R.version$version.string
@@ -29,13 +221,15 @@ sessionInfo()$R.version$version.string
 
 ## Reflection
 
-<!-- CHANGE THIS: 3-4 sentences -->
-
-What I want out of this course:
-
-One thing I'm nervous about:
+This week clarified how R transforms tables with `dplyr` and how ACS data combine
+estimates with measures of uncertainty. I also learned that Census geography and
+GEOIDs must be understood before analysis begins. The most important habit is to
+treat an ACS estimate and its margin of error as a pair rather than focusing only
+on the estimate.
 
 ## Questions I Still Have
 
--
--
+- How should I compare two estimates when both have margins of error?
+- When should I choose long data rather than wide data for a real project?
+- How small can the geography become before ACS estimates are too uncertain for a
+  policy decision?
