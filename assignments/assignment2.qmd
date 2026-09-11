@@ -98,6 +98,7 @@ county_data <- county_data %>%
 count(county_data, reliability)
 ```
 Of New York State’s 62 counties, 24 fall into the high-confidence category, 30 are classified as moderate, and 8 fall into the low-confidence category.
+
 ---
 
 ## Is the margin of error bigger in small places?

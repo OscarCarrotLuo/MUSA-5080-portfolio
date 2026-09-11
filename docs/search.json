@@ -277,7 +277,7 @@
     "href": "assignments/assignment2.html#sorting-counties-into-reliability-categories",
     "title": "Assignment 2: Who Do We Know the Least About?",
     "section": "Sorting counties into reliability categories",
-    "text": "Sorting counties into reliability categories\n\ncounty_data &lt;- county_data %&gt;%\n  mutate(reliability = case_when(\n    moe_pct &lt; 5  ~ \"High confidence\",\n    moe_pct &lt; 10 ~ \"Moderate\",\n    TRUE         ~ \"Low confidence\"\n  ))\n\ncount(county_data, reliability)\n\n# A tibble: 3 × 2\n  reliability         n\n  &lt;chr&gt;           &lt;int&gt;\n1 High confidence    24\n2 Low confidence      8\n3 Moderate           30"
+    "text": "Sorting counties into reliability categories\n\ncounty_data &lt;- county_data %&gt;%\n  mutate(reliability = case_when(\n    moe_pct &lt; 5  ~ \"High confidence\",\n    moe_pct &lt; 10 ~ \"Moderate\",\n    TRUE         ~ \"Low confidence\"\n  ))\n\ncount(county_data, reliability)\n\n# A tibble: 3 × 2\n  reliability         n\n  &lt;chr&gt;           &lt;int&gt;\n1 High confidence    24\n2 Low confidence      8\n3 Moderate           30\n\n\nOf New York State’s 62 counties, 24 fall into the high-confidence category, 30 are classified as moderate, and 8 fall into the low-confidence category."
   },
   {
     "objectID": "assignments/assignment2.html#of-new-york-states-62-counties-24-fall-into-the-high-confidence-category-30-are-classified-as-moderate-and-8-fall-into-the-low-confidence-category.",
