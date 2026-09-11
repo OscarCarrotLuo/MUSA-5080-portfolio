@@ -1,0 +1,194 @@
+---
+title: "Assignment 2: Who Do We Know the Least About?"
+subtitle: "Measuring uncertainty in American Community Survey data"
+author: "Oscar Luo"
+date: "9/4/2026"
+format:
+  html:
+    toc: true
+    code-fold: false
+execute:
+  warning: false
+  message: false
+---
+
+## Setup
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+```
+---
+
+## The question
+
+Every number the American Community Survey publishes is an estimate drawn from a
+sample, not a count. That means every number comes with a margin of error — a
+statement about how wrong it might be.
+
+Most people ignore it. In this assignment, you won't.
+
+
+**In this analysis, I look at the number with a bachelor's degree across counties in New York State, and ask which communities we measure most and least reliably.**
+
+---
+
+## Choosing what to measure
+
+```{r}
+my_state <- "NY"
+my_variable <- "B15003_022"
+```
+
+## Pulling the data
+
+```{r}
+county_data <- get_acs(
+  geography = "county",
+  variables = my_variable,
+  state = my_state,
+  year = 2023,
+  survey = "acs5"
+)
+```
+
+Let's look at what came back.
+
+```{r}
+dim(county_data)
+head(county_data)
+```
+The dataset contains 62 rows, one for each county in New York State, which matches the state’s 62 counties.
+
+---
+
+## How big is the margin of error?
+
+A margin of error of 3,000 means something very different for an estimate of 20,000
+than for an estimate of 200,000. To compare across places, we need it as a
+percentage.
+
+```{r}
+county_data <- county_data %>%
+  mutate(moe_pct = moe / estimate * 100)
+```
+
+Now sort to see which counties are measured least reliably.
+
+```{r}
+county_data %>%
+  arrange(desc(moe_pct)) %>%
+  select(NAME, estimate, moe, moe_pct) %>%
+  head(10)
+```
+Hamilton County has the largest margin of error relative to its estimate. Its margin of error is approximately 16.9% of the estimated number of residents whose highest educational attainment is a bachelor’s degree, making it the least reliably measured county for this variable.
+
+---
+
+## Sorting counties into reliability categories
+
+```{r}
+county_data <- county_data %>%
+  mutate(reliability = case_when(
+    moe_pct < 5  ~ "High confidence",
+    moe_pct < 10 ~ "Moderate",
+    TRUE         ~ "Low confidence"
+  ))
+
+count(county_data, reliability)
+```
+Of New York State’s 62 counties, 24 fall into the high-confidence category, 30 are classified as moderate, and 8 fall into the low-confidence category.
+---
+
+## Is the margin of error bigger in small places?
+
+To answer this we need population and our variable side by side, in the same row.
+That means a **wide** pull.
+
+```{r}
+county_wide <- get_acs(
+  geography = "county",
+  variables = c(myvar = my_variable,
+                pop   = "B01003_001"),
+  state = my_state,
+  year = 2023,
+  survey = "acs5",
+  output = "wide"
+)
+
+head(county_wide)
+```
+
+```{r}
+county_wide <- county_wide %>%
+  mutate(moe_pct = myvarM / myvarE * 100) %>%
+  mutate(reliability = case_when(
+    moe_pct < 5  ~ "High confidence",
+    moe_pct < 10 ~ "Moderate",
+    TRUE         ~ "Low confidence"
+  ))
+```
+
+Now compare the average population of counties in each reliability category.
+
+```{r}
+county_wide %>%
+  group_by(reliability) %>%
+  summarize(
+    n_counties = n(),
+    avg_population = mean(popE)
+  )
+```
+The 24 high-confidence counties have an average population of approximately 730,694, compared with 66,961 for the 30 moderate-confidence counties and 40,855 for the 8 low-confidence counties. This pattern suggests that more populous counties tend to have more reliable ACS estimates, while smaller counties tend to have larger margins of error relative to their estimates.
+
+---
+
+## What this means for policy
+
+Among all the counties in New York State, Hamilton County has the least reliable estimate: 586 residents aged 25 or older were estimated to have a bachelor’s degree as their highest level of education, with a margin of error of 99, or 16.9% of the estimate. Schuyler County follows with a relative margin of error of 13.1%, while Yates and Essex Counties are both about 11.1%. Overall, eight counties fall into the low-confidence category.
+
+This reflects how the American Community Survey (ACS) works. The ACS estimates population characteristics from a sample rather than counting every resident. Smaller counties contribute fewer sampled households and residents, so each response carries more weight and the estimates have greater uncertainty. In this analysis, low-confidence counties have an average population of 40,855, compared with 730,694 in high-confidence counties.
+
+Ignoring this margin of error might lead to unfair policy decisions. If a state agency directed workforce-development funding toward counties with fewer bachelor’s degree holders, it might treat every county estimate as equally precise. If a small county’s bachelor’s degree count were overestimated, it could appear better educated and receive less support than it needs as a result. Rural counties such as Hamilton, Schuyler, and Yates are especially vulnerable because their limited sample sizes make their estimates less stable. Agencies should  consider margins of error and avoid making funding decisions based on small differences alone.
+
+---
+
+## Optional Challenge: Comparing County and Tract-Level Uncertainty
+
+**To examine how geographic scale affects uncertainty, I repeated the analysis for census tracts within Onondaga County, New York, which includes the city of Syracuse.**
+```{r}
+tract_data <- get_acs(
+  geography = "tract",
+  variables = my_variable,
+  state = my_state,
+  county = "Onondaga",
+  year = 2023,
+  survey = "acs5"
+)
+
+dim(tract_data)
+head(tract_data)
+```
+
+```{r}
+tract_data <- tract_data %>%
+  mutate(moe_pct = moe / estimate * 100)
+
+tract_data %>%
+  summarize(
+    n_tracts = n(),
+    median_moe_pct = median(moe_pct),
+    mean_moe_pct = mean(moe_pct),
+    min_moe_pct = min(moe_pct),
+    max_moe_pct = max(moe_pct)
+  )
+```
+
+```{r}
+county_data %>%
+  filter(NAME == "Onondaga County, New York") %>%
+  select(NAME, estimate, moe, moe_pct)
+```
+At the county level, Onondaga County has an estimated 68,569 residents aged 25 or older whose highest educational attainment is a bachelor’s degree, with a relative margin of error of approximately 3.0%. Across its 142 census tracts, however, the median relative margin of error is 32.1% and the mean is 37.3%, with values ranging from 14.3% to 103.1%. This comparison shows that ACS estimates become much less precise at smaller geographic scales because each tract is represented by a smaller sample.
+
+---

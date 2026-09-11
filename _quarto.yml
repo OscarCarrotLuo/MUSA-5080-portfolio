@@ -19,11 +19,11 @@ website:
         text: "Assignments"
     right:
       - icon: github
-        href: https://github.com/YOUR-USERNAME-HERE/MUSA-5080-portfolio      # <-- CHANGE THIS
+        href: https://github.com/OscarCarrotLuo/MUSA-5080-portfolio
 
 format:
   html:
-    theme: sketchy
+    theme: flatly
     toc: true
     code-fold: false
     code-tools: true
