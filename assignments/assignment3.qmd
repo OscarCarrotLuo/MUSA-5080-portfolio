@@ -1,0 +1,301 @@
+---
+title: "Verify the Claim: Poverty Change in Philadelphia"
+author: "Oscar Luo"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show code"
+    embed-resources: true
+---
+
+```{r}
+#| include: false
+library(tidycensus)
+library(tidyverse)
+library(gt)
+```
+
+## Part 1: Reconstruct
+
+This report evaluates claims in Alfred Lubrano's 2018 article, ["New Census figures on Philly neighborhoods show inequality, high numbers of whites living in poverty"](https://whyy.org/articles/new-census-figures-on-philly-neighborhoods-show-inequality-high-numbers-of-whites-living-in-poverty/). The article describes Philadelphia's 2013–2017 poverty rate as about 26% and reports large increases in several named neighborhoods relative to 2006–2010. Because the article does not publish its tract-to-neighborhood crosswalk, I use census tracts as the unit of analysis and test the broader claim that poverty increased across parts of Philadelphia. I do not attempt the optional neighborhood aggregation.
+
+I use ACS detailed table B17001: `B17001_001` is the total population for whom poverty status is determined (the denominator), and `B17001_002` is the population below the poverty level (the numerator). I use the 2010 and 2017 ACS five-year releases because they correspond exactly to the article's 2006–2010 and 2013–2017 periods and provide tract-level estimates. The periods do **not** overlap: 2006–2010 ends before 2013–2017 begins, with 2011–2012 between them. Treating the estimates as independent is therefore appropriate for the change test, but each value still describes a pooled five-year period rather than a single-year snapshot.
+
+```{r}
+#| message: false
+#| warning: false
+
+poverty_2010 <- get_acs(
+  geography = "tract",
+  variables = c(
+    total = "B17001_001",
+    below_poverty = "B17001_002"
+  ),
+  state = "PA",
+  county = "Philadelphia",
+  year = 2010,
+  survey = "acs5",
+  output = "wide"
+)
+
+poverty_2017 <- get_acs(
+  geography = "tract",
+  variables = c(
+    total = "B17001_001",
+    below_poverty = "B17001_002"
+  ),
+  state = "PA",
+  county = "Philadelphia",
+  year = 2017,
+  survey = "acs5",
+  output = "wide"
+)
+```
+
+## Part 2: Test
+
+### Poverty rates and margins of error
+
+The ACS publishes 90% margins of error (MOEs) for the counts. Because a poverty rate is a proportion, I calculate its MOE with `moe_prop()` rather than reusing the MOE for the numerator.
+
+```{r}
+poverty_2010 <- poverty_2010 %>%
+  mutate(
+    poverty_rate = below_povertyE / totalE,
+    poverty_rate_moe = moe_prop(
+      num = below_povertyE,
+      denom = totalE,
+      moe_num = below_povertyM,
+      moe_denom = totalM
+    )
+  )
+
+poverty_2017 <- poverty_2017 %>%
+  mutate(
+    poverty_rate = below_povertyE / totalE,
+    poverty_rate_moe = moe_prop(
+      num = below_povertyE,
+      denom = totalE,
+      moe_num = below_povertyM,
+      moe_denom = totalM
+    )
+  )
+```
+
+### Missing values
+
+```{r}
+missing_2010 <- poverty_2010 %>%
+  filter(
+    totalE == 0 |
+      is.na(poverty_rate) |
+      is.na(poverty_rate_moe)
+  )
+
+missing_2017 <- poverty_2017 %>%
+  filter(
+    totalE == 0 |
+      is.na(poverty_rate) |
+      is.na(poverty_rate_moe)
+  )
+
+nrow(missing_2010)
+nrow(missing_2017)
+```
+
+Seven tracts in 2006–2010 and eight in 2013–2017 have a denominator of zero and therefore an undefined poverty rate. These tracts have no estimated population in the poverty universe, so I exclude them rather than treating an undefined rate as zero. After the two periods are matched, 376 tracts have usable estimates in both periods.
+
+### Reliability
+
+I convert each 90% MOE to a standard error by dividing by 1.645, then calculate the coefficient of variation (CV) as the standard error divided by the poverty-rate estimate. Following the required Jurjevich et al. (2018) thresholds, a CV below 12% is reliable, 12–40% is somewhat reliable, and above 40% is unreliable.
+
+```{r}
+poverty_2010_valid <- poverty_2010 %>%
+  filter(
+    totalE > 0,
+    !is.na(poverty_rate),
+    !is.na(poverty_rate_moe)
+  ) %>%
+  mutate(
+    period = "2006–2010",
+    poverty_rate_se = poverty_rate_moe / 1.645,
+    cv = poverty_rate_se / poverty_rate * 100,
+    reliability = case_when(
+      cv < 12  ~ "Reliable",
+      cv <= 40 ~ "Somewhat reliable",
+      TRUE     ~ "Unreliable"
+    )
+  )
+
+poverty_2017_valid <- poverty_2017 %>%
+  filter(
+    totalE > 0,
+    !is.na(poverty_rate),
+    !is.na(poverty_rate_moe)
+  ) %>%
+  mutate(
+    period = "2013–2017",
+    poverty_rate_se = poverty_rate_moe / 1.645,
+    cv = poverty_rate_se / poverty_rate * 100,
+    reliability = case_when(
+      cv < 12  ~ "Reliable",
+      cv <= 40 ~ "Somewhat reliable",
+      TRUE     ~ "Unreliable"
+    )
+  )
+
+reliability_counts <- bind_rows(
+  poverty_2010_valid,
+  poverty_2017_valid
+) %>%
+  count(period, reliability)
+```
+
+```{r}
+poverty_2017_valid %>%
+  mutate(
+    dot = case_when(
+      cv < 12  ~ "🟢",
+      cv <= 40 ~ "🟡",
+      TRUE     ~ "🔴"
+    ),
+    flag = reliability,
+    NAME = str_remove(NAME, ", Philadelphia County, Pennsylvania"),
+    rate = poverty_rate * 100,
+    rate_moe = poverty_rate_moe * 100
+  ) %>%
+  arrange(desc(cv)) %>%
+  slice_head(n = 15) %>%
+  select(dot, NAME, rate, rate_moe, cv, flag) %>%
+  gt() %>%
+  fmt_number(columns = c(rate, rate_moe), decimals = 1) %>%
+  fmt_number(columns = cv, decimals = 1) %>%
+  cols_label(
+    dot = "",
+    NAME = "Census tract",
+    rate = "Poverty rate (%)",
+    rate_moe = "MOE (percentage points)",
+    cv = "CV (%)",
+    flag = "Reliability"
+  ) %>%
+  cols_align(align = "center", columns = dot) %>%
+  tab_header(
+    title = "Fifteen least reliable tract poverty-rate estimates",
+    subtitle = "Philadelphia County, 2013–2017 ACS five-year estimates"
+  ) %>%
+  tab_source_note(
+    "Source: U.S. Census Bureau ACS via tidycensus. Jurjevich et al. (2018) thresholds: CV < 12% reliable; 12–40% somewhat reliable; > 40% unreliable."
+  )
+```
+
+Reliability is uneven. In 2006–2010, 11 tracts are reliable, 321 somewhat reliable, and 45 unreliable. In 2013–2017, the corresponding counts are 22, 332, and 22. The table displays the least reliable recent estimates rather than hiding them; these large CVs are a reason to test uncertainty explicitly before interpreting apparent change.
+
+### Change between periods
+
+```{r}
+poverty_wide <- bind_rows(
+  poverty_2010_valid,
+  poverty_2017_valid
+) %>%
+  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe) %>%
+  pivot_wider(
+    names_from = period,
+    values_from = c(poverty_rate, poverty_rate_moe)
+  )
+
+poverty_tested <- poverty_wide %>%
+  filter(
+    !is.na(`poverty_rate_2006–2010`),
+    !is.na(`poverty_rate_2013–2017`)
+  ) %>%
+  mutate(
+    change = `poverty_rate_2013–2017` - `poverty_rate_2006–2010`,
+    se_1 = `poverty_rate_moe_2006–2010` / 1.645,
+    se_2 = `poverty_rate_moe_2013–2017` / 1.645,
+    se_diff = sqrt(se_1^2 + se_2^2),
+    moe_diff = se_diff * 1.645,
+    z = change / se_diff,
+    significant = abs(z) > 1.645,
+    result = case_when(
+      significant & change > 0 ~ "Significant increase",
+      significant & change < 0 ~ "Significant decrease",
+      TRUE ~ "Not statistically detectable"
+    )
+  )
+
+change_counts <- poverty_tested %>%
+  count(result)
+```
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+#| fig-cap: "Most Philadelphia tracts did not have a statistically detectable change in poverty rate."
+
+ggplot(change_counts, aes(x = result, y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "Results of the tract-level change test",
+    subtitle = "Individual 90% tests for 376 matched Philadelphia census tracts",
+    x = NULL,
+    y = "Number of tracts",
+    caption = "Source: U.S. Census Bureau, ACS five-year estimates."
+  )
+```
+
+### Error-bar visualization
+
+For readability, the figure below shows the 20 largest absolute changes among tracts whose changes are statistically detectable. The complete significance count above still includes all 376 matched tracts.
+
+```{r}
+#| fig-width: 9
+#| fig-height: 8
+#| fig-cap: "Largest statistically detectable tract-level changes in poverty rates, with 90% margins of error."
+
+change_plot_data <- poverty_tested %>%
+  filter(significant) %>%
+  arrange(desc(abs(change))) %>%
+  slice_head(n = 20) %>%
+  mutate(
+    NAME = str_remove(NAME, ", Philadelphia County, Pennsylvania"),
+    change_pp = change * 100,
+    moe_diff_pp = moe_diff * 100,
+    direction = case_when(
+      change > 0 ~ "Increase",
+      TRUE ~ "Decrease"
+    )
+  )
+
+change_plot_data %>%
+  ggplot(aes(x = reorder(NAME, change_pp), y = change_pp)) +
+  geom_col(aes(fill = direction)) +
+  geom_errorbar(aes(ymin = change_pp - moe_diff_pp,
+                    ymax = change_pp + moe_diff_pp), width = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "Largest statistically detectable changes in poverty rate",
+    subtitle = "Twenty largest absolute tract changes, 2006–2010 vs. 2013–2017",
+    x = NULL,
+    y = "Change in poverty rate (percentage points)",
+    fill = NULL,
+    caption = "Error bars show 90% margins of error; dashed line marks no change. Source: U.S. Census Bureau ACS."
+  )
+```
+
+Of the 376 matched tracts, 36 show a statistically detectable increase, 27 show a detectable decrease, and 313 show no detectable change at 90% confidence. The evidence therefore supports uneven change across Philadelphia, but not a simple citywide story in which poverty clearly rose everywhere.
+
+## Part 3: Adjudicate
+
+**Supported.** The article's broader claim that poverty increased sharply in some parts of Philadelphia is supported at the tract level. Thirty-six of 376 comparable tracts show statistically detectable increases. **Not supported.** The results do not support the impression that rising poverty was widespread across the city's tracts. Most tracts—313 of 376—show no statistically detectable change, while 27 show a detectable decrease.
+
+**Cannot be determined.** The exact claims for Fairhill (61%), Eastwick (12% to 26%), and Holmesburg's white poverty rate (2% to 19%) cannot be reproduced from this tract analysis. The article does not disclose which tracts it aggregated into each informal neighborhood. The Holmesburg claim additionally requires race-specific poverty data, and the article's explanations involving opioids, migration, or displacement would require evidence beyond these ACS estimates. Those claims are therefore not disproved; they remain unverified with the published methodological detail.
+
+## Part 4: Rewrite
+
+> The American Community Survey shows that poverty changed unevenly across Philadelphia between 2006–2010 and 2013–2017. Among 376 census tracts with usable estimates in both periods, 36 had statistically detectable increases in poverty rates, 27 had detectable decreases, and 313 showed no detectable change at 90% confidence. These results support the conclusion that poverty worsened in some parts of the city, but not that the increase was widespread. The exact figures reported for Fairhill, Eastwick, and Holmesburg cannot be reproduced from tract data alone because the article did not publish which tracts were combined into each neighborhood. The Holmesburg claim about white poverty also requires race-specific poverty data.
