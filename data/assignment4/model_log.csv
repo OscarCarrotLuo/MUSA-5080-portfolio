@@ -1,0 +1,14 @@
+model,added,cv_rmse,notes
+m1,Four ACS predictors,12.326881641644402,Baseline
+m2,m1 + robbery count,11.758232814338017,Raw event count
+m3,m2: replace count with area density,10.860911683318081,Separate size from concentration
+m4,m3 + sidewalk-request density,10.747860354462343,Pedestrian-environment proxy
+m5,m4 + nearest sidewalk-request distance,10.683164419213323,Straight-line distance from interior point
+m6,m5 + distance to City Hall,9.617817933658618,Centrality proxy
+m7,m6: log1p robbery density,9.815451340084175,Compress the right tail; retain zeros
+m8,m6 + squared City Hall distance,9.339861503764961,Allow the distance gradient to bend
+m9,m6: replace linear distance with rings,9.811157607877595,Core is the reference category
+m10,m7 + squared City Hall distance,9.481397395624365,Test log and quadratic together
+m11,m8: remove nearest-request distance,9.344112235585984,Almost unchanged RMSE
+m12,m11: remove sidewalk-request density,9.315437603066892,Lowest candidate RMSE; fewer terms
+final,Retain m12,9.315437603066892,"Selected candidate, not a new test"
