@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-09-18">
+<meta name="description" content="Joining Census tables and map geometries, choosing coordinate systems, and using sf for spatial relationships and analysis.">
+
+<title>Week 4: Spatial Data, Joins, CRS, and sf – Oscar Luo - MUSA 5080 Portfolio</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-9d96f532d65220ca877c0304385df42f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Portfolio</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../weekly-notes/index.html"> 
+<span class="menu-text">Weekly Notes</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../assignments/index.html"> 
+<span class="menu-text">Assignments</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/OscarCarrotLuo/MUSA-5080-portfolio"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#what-we-did" id="toc-what-we-did" class="nav-link active" data-scroll-target="#what-we-did">What We Did</a></li>
+  <li><a href="#key-concepts" id="toc-key-concepts" class="nav-link" data-scroll-target="#key-concepts">Key Concepts</a></li>
+  <li><a href="#attribute-joins-matching-tables-by-geoid" id="toc-attribute-joins-matching-tables-by-geoid" class="nav-link" data-scroll-target="#attribute-joins-matching-tables-by-geoid">1. Attribute Joins: Matching Tables by GEOID</a>
+  <ul class="collapse">
+  <li><a href="#left_join" id="toc-left_join" class="nav-link" data-scroll-target="#left_join">left_join()</a></li>
+  <li><a href="#join-types" id="toc-join-types" class="nav-link" data-scroll-target="#join-types">Join types</a></li>
+  </ul></li>
+  <li><a href="#sf-attributes-and-geometry-in-one-table" id="toc-sf-attributes-and-geometry-in-one-table" class="nav-link" data-scroll-target="#sf-attributes-and-geometry-in-one-table">2. sf: Attributes and Geometry in One Table</a>
+  <ul class="collapse">
+  <li><a href="#common-spatial-formats" id="toc-common-spatial-formats" class="nav-link" data-scroll-target="#common-spatial-formats">Common spatial formats</a></li>
+  </ul></li>
+  <li><a href="#what-a-crs-does" id="toc-what-a-crs-does" class="nav-link" data-scroll-target="#what-a-crs-does">3. What a CRS Does</a>
+  <ul class="collapse">
+  <li><a href="#geographic-crs" id="toc-geographic-crs" class="nav-link" data-scroll-target="#geographic-crs">Geographic CRS</a></li>
+  <li><a href="#projected-crs" id="toc-projected-crs" class="nav-link" data-scroll-target="#projected-crs">Projected CRS</a></li>
+  </ul></li>
+  <li><a href="#ellipsoids-and-datums" id="toc-ellipsoids-and-datums" class="nav-link" data-scroll-target="#ellipsoids-and-datums">4. Ellipsoids and Datums</a></li>
+  <li><a href="#flattening-earth-projection-families-and-distortion" id="toc-flattening-earth-projection-families-and-distortion" class="nav-link" data-scroll-target="#flattening-earth-projection-families-and-distortion">5. Flattening Earth: Projection Families and Distortion</a>
+  <ul class="collapse">
+  <li><a href="#what-can-a-projection-preserve" id="toc-what-can-a-projection-preserve" class="nav-link" data-scroll-target="#what-can-a-projection-preserve">What can a projection preserve?</a></li>
+  </ul></li>
+  <li><a href="#epsg-codes-used-in-class" id="toc-epsg-codes-used-in-class" class="nav-link" data-scroll-target="#epsg-codes-used-in-class">6. EPSG Codes Used in Class</a></li>
+  <li><a href="#st_set_crs-is-not-st_transform" id="toc-st_set_crs-is-not-st_transform" class="nav-link" data-scroll-target="#st_set_crs-is-not-st_transform">7. st_set_crs() Is Not st_transform()</a>
+  <ul class="collapse">
+  <li><a href="#st_set_crs" id="toc-st_set_crs" class="nav-link" data-scroll-target="#st_set_crs">st_set_crs()</a></li>
+  <li><a href="#st_transform" id="toc-st_transform" class="nav-link" data-scroll-target="#st_transform">st_transform()</a></li>
+  </ul></li>
+  <li><a href="#utm-and-state-plane-systems" id="toc-utm-and-state-plane-systems" class="nav-link" data-scroll-target="#utm-and-state-plane-systems">8. UTM and State Plane Systems</a>
+  <ul class="collapse">
+  <li><a href="#utm" id="toc-utm" class="nav-link" data-scroll-target="#utm">UTM</a></li>
+  <li><a href="#state-plane" id="toc-state-plane" class="nav-link" data-scroll-target="#state-plane">State Plane</a></li>
+  </ul></li>
+  <li><a href="#spatial-predicates-what-relationship-do-the-shapes-have" id="toc-spatial-predicates-what-relationship-do-the-shapes-have" class="nav-link" data-scroll-target="#spatial-predicates-what-relationship-do-the-shapes-have">9. Spatial Predicates: What Relationship Do the Shapes Have?</a></li>
+  <li><a href="#selecting-joining-and-changing-geometry" id="toc-selecting-joining-and-changing-geometry" class="nav-link" data-scroll-target="#selecting-joining-and-changing-geometry">10. Selecting, Joining, and Changing Geometry</a>
+  <ul class="collapse">
+  <li><a href="#why-st_filter-and-st_intersection-are-not-interchangeable" id="toc-why-st_filter-and-st_intersection-are-not-interchangeable" class="nav-link" data-scroll-target="#why-st_filter-and-st_intersection-are-not-interchangeable">Why st_filter() and st_intersection() are not interchangeable</a></li>
+  <li><a href="#spatial-joins" id="toc-spatial-joins" class="nav-link" data-scroll-target="#spatial-joins">Spatial joins</a></li>
+  </ul></li>
+  <li><a href="#half-mile-station-access-example" id="toc-half-mile-station-access-example" class="nav-link" data-scroll-target="#half-mile-station-access-example">11. Half-Mile Station Access Example</a></li>
+  <li><a href="#distance-matrices-and-nearest-features" id="toc-distance-matrices-and-nearest-features" class="nav-link" data-scroll-target="#distance-matrices-and-nearest-features">12. Distance Matrices and Nearest Features</a></li>
+  <li><a href="#a-reliable-spatial-analysis-checklist" id="toc-a-reliable-spatial-analysis-checklist" class="nav-link" data-scroll-target="#a-reliable-spatial-analysis-checklist">13. A Reliable Spatial-Analysis Checklist</a></li>
+  <li><a href="#reflection" id="toc-reflection" class="nav-link" data-scroll-target="#reflection">Reflection</a></li>
+  <li><a href="#questions-i-still-have" id="toc-questions-i-still-have" class="nav-link" data-scroll-target="#questions-i-still-have">Questions I Still Have</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Week 4: Spatial Data, Joins, CRS, and sf</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+</div>
+
+<div>
+  <div class="description">
+    Joining Census tables and map geometries, choosing coordinate systems, and using sf for spatial relationships and analysis.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 18, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-we-did" class="level2">
+<h2 class="anchored" data-anchor-id="what-we-did">What We Did</h2>
+<p>We connected ordinary Census tables to map geometries, compared attribute joins with spatial joins, and learned how the sf package stores spatial features in R. We then studied coordinate reference systems (CRSs), datums, projections, EPSG codes, UTM and State Plane systems, and the distortion tradeoffs involved in flattening the Earth onto a map.</p>
+<p>The second half of the class introduced spatial predicates and operations: testing whether features intersect, touch, or fall within one another; creating buffers; selecting nearby tracts; joining attributes by location; finding common areas; combining shapes; and calculating distances.</p>
+</section>
+<section id="key-concepts" class="level2">
+<h2 class="anchored" data-anchor-id="key-concepts">Key Concepts</h2>
+<ul>
+<li>A GEOID is a Census geography identifier. Store it as character text so leading zeros are not lost.</li>
+<li>An attribute join matches rows using a shared key such as GEOID; a spatial join matches features using their locations and shapes.</li>
+<li>An sf object is a data-frame-like table with a special geometry column and CRS metadata.</li>
+<li>A CRS explains what coordinate numbers mean and where they locate features on Earth.</li>
+<li>st_set_crs() assigns or repairs a CRS label; st_transform() actually recalculates coordinates in another CRS.</li>
+<li>Geographic CRSs normally use longitude and latitude in degrees. Projected CRSs use flat x/y coordinates, commonly in meters or feet.</li>
+<li>Every flat projection distorts something. Choose a projection according to the task: shape, area, distance, or direction.</li>
+<li>Spatial predicates answer yes/no relationship questions. Spatial transformations such as buffers, intersections, and unions create new geometry.</li>
+</ul>
+</section>
+<section id="attribute-joins-matching-tables-by-geoid" class="level2">
+<h2 class="anchored" data-anchor-id="attribute-joins-matching-tables-by-geoid">1. Attribute Joins: Matching Tables by GEOID</h2>
+<p>Suppose the two income tables are:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>GEOID</th>
+<th style="text-align: right;">med_inc_23</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>100</td>
+<td style="text-align: right;">82,000</td>
+</tr>
+<tr class="even">
+<td>200</td>
+<td style="text-align: right;">31,500</td>
+</tr>
+<tr class="odd">
+<td>300</td>
+<td style="text-align: right;">45,000</td>
+</tr>
+</tbody>
+</table>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>GEOID</th>
+<th style="text-align: right;">med_inc_15</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>100</td>
+<td style="text-align: right;">61,000</td>
+</tr>
+<tr class="even">
+<td>200</td>
+<td style="text-align: right;">27,000</td>
+</tr>
+<tr class="odd">
+<td>400</td>
+<td style="text-align: right;">39,000</td>
+</tr>
+</tbody>
+</table>
+<p>A valid join key must have the same meaning and compatible formatting in both tables. It is not enough for both columns to be named GEOID: both must represent the same geographic level and vintage, and values such as leading zeros must be preserved.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A[2023 table&lt;br/&gt;100, 200, 300] --&gt; J{Join by GEOID}
+    B[2015 table&lt;br/&gt;100, 200, 400] --&gt; J
+    J --&gt; L[left_join&lt;br/&gt;100, 200, 300]
+    J --&gt; I[inner_join&lt;br/&gt;100, 200]
+    J --&gt; F[full_join&lt;br/&gt;100, 200, 300, 400]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="left_join" class="level3">
+<h3 class="anchored" data-anchor-id="left_join">left_join()</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>income_joined <span class="ot">&lt;-</span> <span class="fu">left_join</span>(income_23, income_15, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Because income_23 is on the left, every 2023 row remains:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>GEOID</th>
+<th style="text-align: right;">med_inc_23</th>
+<th style="text-align: right;">med_inc_15</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>100</td>
+<td style="text-align: right;">82,000</td>
+<td style="text-align: right;">61,000</td>
+</tr>
+<tr class="even">
+<td>200</td>
+<td style="text-align: right;">31,500</td>
+<td style="text-align: right;">27,000</td>
+</tr>
+<tr class="odd">
+<td>300</td>
+<td style="text-align: right;">45,000</td>
+<td style="text-align: right;">NA</td>
+</tr>
+</tbody>
+</table>
+<p>GEOID 400 does not appear in this result because it exists only in the right-hand table. The original note incorrectly included 400 in the left_join() result; including all four GEOIDs would be a full_join().</p>
+</section>
+<section id="join-types" class="level3">
+<h3 class="anchored" data-anchor-id="join-types">Join types</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Join</th>
+<th>Rows retained</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>left_join(x, y)</td>
+<td>All keys from x; unmatched y values become NA</td>
+</tr>
+<tr class="even">
+<td>inner_join(x, y)</td>
+<td>Only keys appearing in both x and y</td>
+</tr>
+<tr class="odd">
+<td>full_join(x, y)</td>
+<td>Every key appearing in either table</td>
+</tr>
+<tr class="even">
+<td>anti_join(x, y)</td>
+<td>Rows in x with no match in y; useful for diagnosing failed matches</td>
+</tr>
+</tbody>
+</table>
+<p>Always check a join rather than assuming it worked:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>income_joined <span class="sc">|&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">rows =</span> <span class="fu">n</span>(),</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">missing_2015 =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(med_inc_15))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">anti_join</span>(income_23, income_15, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Matching GEOIDs alone may still be misleading across years if Census boundaries changed. For time comparisons, confirm that the geographic vintage is consistent or use an appropriate crosswalk.</p>
+</section>
+</section>
+<section id="sf-attributes-and-geometry-in-one-table" class="level2">
+<h2 class="anchored" data-anchor-id="sf-attributes-and-geometry-in-one-table">2. sf: Attributes and Geometry in One Table</h2>
+<p>sf means simple features. An sf object behaves like a data frame but also contains:</p>
+<ol type="1">
+<li>Ordinary attribute columns such as GEOID, population, or income.</li>
+<li>A geometry column containing POINT, LINESTRING, POLYGON, or multipart geometries.</li>
+<li>CRS metadata describing the coordinate system.</li>
+</ol>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>GEOID</th>
+<th style="text-align: right;">med_inc_23</th>
+<th>geometry</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>42101000100</td>
+<td style="text-align: right;">82,000</td>
+<td>POLYGON (…)</td>
+</tr>
+<tr class="even">
+<td>42101000200</td>
+<td style="text-align: right;">31,500</td>
+<td>POLYGON (…)</td>
+</tr>
+</tbody>
+</table>
+<p>The geometry column is often described as sticky: when an sf object is the left table in a normal dplyr operation, its geometry usually remains attached.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidycensus)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>tracts <span class="ot">&lt;-</span> <span class="fu">get_acs</span>(</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">geography =</span> <span class="st">"tract"</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">variables =</span> <span class="fu">c</span>(<span class="at">median_income =</span> <span class="st">"B19013_001"</span>),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">state =</span> <span class="st">"PA"</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">county =</span> <span class="st">"Philadelphia"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">year =</span> <span class="dv">2023</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">geometry =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(tracts)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry_type</span>(tracts)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For an attribute join, normally join a plain table onto the sf layer:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>tracts_with_data <span class="ot">&lt;-</span> <span class="fu">left_join</span>(tracts, income_table, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If both inputs are sf objects but the match is based on a key rather than location, drop geometry from the right table first:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>joined <span class="ot">&lt;-</span> <span class="fu">left_join</span>(spatial_x, <span class="fu">st_drop_geometry</span>(spatial_y), <span class="at">by =</span> <span class="st">"GEOID"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="common-spatial-formats" class="level3">
+<h3 class="anchored" data-anchor-id="common-spatial-formats">Common spatial formats</h3>
+<ul>
+<li>A shapefile is not only one .shp file. It normally includes .shp geometry, .shx index, .dbf attributes, and .prj CRS information. Keep the companion files together.</li>
+<li>A file geodatabase has a .gdb extension and is usually a folder containing multiple layers.</li>
+<li>GeoPackage (.gpkg) is a modern single-file container that can hold several vector layers.</li>
+<li>st_read() or read_sf() reads supported vector layers into sf.</li>
+</ul>
+</section>
+</section>
+<section id="what-a-crs-does" class="level2">
+<h2 class="anchored" data-anchor-id="what-a-crs-does">3. What a CRS Does</h2>
+<p>A CRS answers four questions:</p>
+<ol type="1">
+<li>What model of Earth is being used?</li>
+<li>Where is that model anchored relative to Earth?</li>
+<li>How are locations represented as coordinates?</li>
+<li>What units and axis conventions do those coordinates use?</li>
+</ol>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    E[Real Earth] --&gt; D[Datum and ellipsoid&lt;br/&gt;model and anchor]
+    D --&gt; G[Geographic CRS&lt;br/&gt;longitude and latitude]
+    G --&gt; P[Map projection]
+    P --&gt; C[Projected CRS&lt;br/&gt;x and y in linear units]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="geographic-crs" class="level3">
+<h3 class="anchored" data-anchor-id="geographic-crs">Geographic CRS</h3>
+<ul>
+<li>Represents longitude and latitude on an ellipsoid.</li>
+<li>Coordinate values are angular, normally degrees.</li>
+<li>Useful for data exchange, GPS, and global reference.</li>
+<li>A degree is not a fixed ground distance: one degree of longitude becomes shorter toward the poles.</li>
+</ul>
+</section>
+<section id="projected-crs" class="level3">
+<h3 class="anchored" data-anchor-id="projected-crs">Projected CRS</h3>
+<ul>
+<li>Converts locations to a flat x/y grid.</li>
+<li>Units are usually meters or feet.</li>
+<li>Designed for a particular region and purpose.</li>
+<li>Often preferable for local buffers, Euclidean distances, and areas because the units are explicit and distortion can be controlled locally.</li>
+</ul>
+<p>Modern sf can perform geodesic calculations on longitude/latitude data, but for a local policy analysis it is still important to choose and document an appropriate projected CRS before interpreting feet, meters, areas, or buffer radii.</p>
+</section>
+</section>
+<section id="ellipsoids-and-datums" class="level2">
+<h2 class="anchored" data-anchor-id="ellipsoids-and-datums">4. Ellipsoids and Datums</h2>
+<p>An ellipsoid approximates Earth’s shape. A datum connects that model to the real Earth and supplies a reference frame. GRS 80 is an ellipsoid; NAD 83 is a datum/reference system built on it.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Reference</th>
+<th>Main idea</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>NAD 27</td>
+<td>North American Datum of 1927; based on the Clarke 1866 ellipsoid and anchored at Meades Ranch, Kansas</td>
+</tr>
+<tr class="even">
+<td>NAD 83</td>
+<td>North American Datum of 1983; based on GRS 80 and designed as an Earth-centered reference system</td>
+</tr>
+<tr class="odd">
+<td>WGS 84</td>
+<td>Global Earth-centered reference system used by GPS and much worldwide data</td>
+</tr>
+</tbody>
+</table>
+<p>Coordinates for the same physical place can differ between datums. A CRS label is therefore essential; longitude and latitude numbers without a datum are incomplete information.</p>
+</section>
+<section id="flattening-earth-projection-families-and-distortion" class="level2">
+<h2 class="anchored" data-anchor-id="flattening-earth-projection-families-and-distortion">5. Flattening Earth: Projection Families and Distortion</h2>
+<p>A globe cannot be flattened without stretching, tearing, or compressing it. A map projection chooses where and how distortion occurs.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    E[Curved Earth] --&gt; CY[Cylindrical]
+    E --&gt; CO[Conic]
+    E --&gt; AZ[Planar or azimuthal]
+    CY --&gt; TM[Transverse Mercator&lt;br/&gt;used by UTM]
+    CO --&gt; LCC[Lambert conformal conic&lt;br/&gt;common in State Plane]
+    CO --&gt; AEA[Albers equal area&lt;br/&gt;regional area analysis]
+    AZ --&gt; LOCAL[Directions or distances&lt;br/&gt;from a selected center]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ul>
+<li>Cylindrical: imagine wrapping a cylinder around Earth. A transverse cylinder is turned sideways so its line of best fit follows a meridian.</li>
+<li>Conic: imagine placing a cone over Earth. It works well for mid-latitude regions that extend east–west.</li>
+<li>Planar or azimuthal: project onto a plane touching at a point; often useful around a chosen center.</li>
+<li>Tangent projections touch at one line or point; secant projections cut through and create two standard lines. Distortion is lowest along the standard line(s) or point and generally increases away from them.</li>
+</ul>
+<section id="what-can-a-projection-preserve" class="level3">
+<h3 class="anchored" data-anchor-id="what-can-a-projection-preserve">What can a projection preserve?</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Property</th>
+<th>What it preserves</th>
+<th>What it does not guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conformal</td>
+<td>Local angles and small shapes</td>
+<td>Correct area or distance everywhere</td>
+</tr>
+<tr class="even">
+<td>Equal-area</td>
+<td>Relative area</td>
+<td>Local shape and all distances</td>
+</tr>
+<tr class="odd">
+<td>Equidistant</td>
+<td>Selected distances from particular lines or points</td>
+<td>Every distance between every pair of locations</td>
+</tr>
+<tr class="even">
+<td>True-direction / azimuthal</td>
+<td>Directions from a selected center</td>
+<td>Shape, area, and distance everywhere</td>
+</tr>
+</tbody>
+</table>
+<p>No flat map preserves shape, area, distance, and direction everywhere at the same time. The correct projection depends on the research question.</p>
+</section>
+</section>
+<section id="epsg-codes-used-in-class" class="level2">
+<h2 class="anchored" data-anchor-id="epsg-codes-used-in-class">6. EPSG Codes Used in Class</h2>
+<p>An EPSG code is a compact identifier for a particular CRS definition. The code is not a quality ranking; it simply points to a documented coordinate system.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 23%">
+<col style="width: 23%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">EPSG</th>
+<th>CRS</th>
+<th>Type</th>
+<th>Typical units / use</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">4326</td>
+<td>WGS 84</td>
+<td>Geographic</td>
+<td>Degrees; GPS and global exchange</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4269</td>
+<td>NAD 83</td>
+<td>Geographic</td>
+<td>Degrees; North American data</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2272</td>
+<td>NAD83 / Pennsylvania South (ftUS)</td>
+<td>Projected State Plane</td>
+<td>US survey feet; southern Pennsylvania local analysis</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">5070</td>
+<td>NAD83 / Conus Albers</td>
+<td>Projected equal-area</td>
+<td>Meters; area comparisons across the conterminous US</td>
+</tr>
+</tbody>
+</table>
+<p>Check the CRS instead of guessing from the coordinate values:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)<span class="sc">$</span>epsg</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)<span class="sc">$</span>units_gdal</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="st_set_crs-is-not-st_transform" class="level2">
+<h2 class="anchored" data-anchor-id="st_set_crs-is-not-st_transform">7. st_set_crs() Is Not st_transform()</h2>
+<p>This distinction is essential:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A[Coordinates have no label&lt;br/&gt;but true CRS is known] --&gt;|st_set_crs 2272| B[Same coordinate numbers&lt;br/&gt;correct CRS metadata added]
+    B --&gt;|st_transform 4326| C[New coordinate numbers&lt;br/&gt;same real-world locations]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="st_set_crs" class="level3">
+<h3 class="anchored" data-anchor-id="st_set_crs">st_set_crs()</h3>
+<p>Use only when coordinates already belong to a known CRS but the CRS metadata is missing or incorrect.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>roads <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(roads, <span class="dv">2272</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This changes the label, not the coordinate numbers and not the locations. Assigning the wrong label makes the data incorrect.</p>
+</section>
+<section id="st_transform" class="level3">
+<h3 class="anchored" data-anchor-id="st_transform">st_transform()</h3>
+<p>Use when the layer already has the correct source CRS and you want a new CRS.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>roads_wgs84 <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(roads, <span class="dv">4326</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This recalculates all coordinate numbers while preserving the same real-world locations. Before combining spatial layers, make their CRSs compatible:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(stations) <span class="sc">==</span> <span class="fu">st_crs</span>(tracts)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>stations <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(stations, <span class="fu">st_crs</span>(tracts))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="utm-and-state-plane-systems" class="level2">
+<h2 class="anchored" data-anchor-id="utm-and-state-plane-systems">8. UTM and State Plane Systems</h2>
+<section id="utm" class="level3">
+<h3 class="anchored" data-anchor-id="utm">UTM</h3>
+<p>The Universal Transverse Mercator system divides the world into 60 longitudinal zones, each approximately 6 degrees wide. Each zone uses its own transverse Mercator projection and meter coordinates.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    W[World longitude] --&gt; Z1[Zone 1&lt;br/&gt;6 degrees]
+    W --&gt; Z2[Zone 2&lt;br/&gt;6 degrees]
+    W --&gt; DOT[...]
+    W --&gt; Z18[Zone 18N&lt;br/&gt;Philadelphia region]
+    W --&gt; Z60[Zone 60&lt;br/&gt;6 degrees]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>A central meridian runs through each zone. UTM assigns a false easting of 500,000 meters at that meridian so ordinary zone coordinates avoid negative eastings. Southern-hemisphere zones also use a false northing. A coordinate such as x = 500,000 and y = 4,400,000 has meaning only together with its UTM zone and hemisphere.</p>
+</section>
+<section id="state-plane" class="level3">
+<h3 class="anchored" data-anchor-id="state-plane">State Plane</h3>
+<p>The State Plane Coordinate System divides US states into one or more zones designed for accurate local work. Pennsylvania has North and South zones. EPSG:2272 is the NAD83 Pennsylvania South definition in US survey feet. Do not assume that every State Plane layer uses feet: definitions may use meters or feet, so inspect the exact EPSG record.</p>
+</section>
+</section>
+<section id="spatial-predicates-what-relationship-do-the-shapes-have" class="level2">
+<h2 class="anchored" data-anchor-id="spatial-predicates-what-relationship-do-the-shapes-have">9. Spatial Predicates: What Relationship Do the Shapes Have?</h2>
+<p>Imagine polygon A next to B, while smaller polygon C lies inside A:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A[Polygon A] ---|touches boundary| B[Polygon B]
+    C[Polygon C] --&gt;|within| A
+    A --&gt;|contains| C
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 19%">
+<col style="width: 19%">
+<col style="width: 19%">
+<col style="width: 19%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Predicate</th>
+<th>Question</th>
+<th style="text-align: center;">A–B</th>
+<th style="text-align: center;">A–C</th>
+<th style="text-align: center;">C–A</th>
+<th style="text-align: center;">A–A</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>st_intersects()</td>
+<td>Do the features share any point?</td>
+<td style="text-align: center;">TRUE</td>
+<td style="text-align: center;">TRUE</td>
+<td style="text-align: center;">TRUE</td>
+<td style="text-align: center;">TRUE</td>
+</tr>
+<tr class="even">
+<td>st_touches()</td>
+<td>Do boundaries meet while interiors do not overlap?</td>
+<td style="text-align: center;">TRUE</td>
+<td style="text-align: center;">FALSE</td>
+<td style="text-align: center;">FALSE</td>
+<td style="text-align: center;">FALSE</td>
+</tr>
+<tr class="odd">
+<td>st_within()</td>
+<td>Is the first feature inside the second?</td>
+<td style="text-align: center;">FALSE</td>
+<td style="text-align: center;">FALSE</td>
+<td style="text-align: center;">TRUE</td>
+<td style="text-align: center;">TRUE</td>
+</tr>
+</tbody>
+</table>
+<p>Important details:</p>
+<ul>
+<li>st_intersects() is broad: touching, overlapping, containment, and equality can all count as intersection.</li>
+<li>st_touches() is usually better for finding neighboring polygons because a feature does not touch itself.</li>
+<li>st_within(x, y) has an order: it asks whether x is within y.</li>
+<li>Spatial predicates normally return sparse relationship lists or logical relationships; they do not automatically create clipped shapes.</li>
+</ul>
+</section>
+<section id="selecting-joining-and-changing-geometry" class="level2">
+<h2 class="anchored" data-anchor-id="selecting-joining-and-changing-geometry">10. Selecting, Joining, and Changing Geometry</h2>
+<p>These functions answer different questions:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Main result</th>
+<th>Does geometry change?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>st_filter(x, y)</td>
+<td>Rows of x satisfying a spatial predicate with y</td>
+<td>No; selected x geometries remain whole</td>
+</tr>
+<tr class="even">
+<td>st_join(x, y)</td>
+<td>x features plus matching attributes from y</td>
+<td>Normally keeps x geometry</td>
+</tr>
+<tr class="odd">
+<td>st_intersection(x, y)</td>
+<td>Shared pieces of x and y</td>
+<td>Yes; features may be clipped or split</td>
+</tr>
+<tr class="even">
+<td>st_union(x)</td>
+<td>Combined geometry</td>
+<td>Yes; boundaries may dissolve</td>
+</tr>
+<tr class="odd">
+<td>st_buffer(x, dist)</td>
+<td>Zones at a specified distance around x</td>
+<td>Yes; creates new polygons</td>
+</tr>
+<tr class="even">
+<td>st_distance(x, y)</td>
+<td>Pairwise distance matrix</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    Q[Which tracts are near a station?] --&gt; F[st_filter&lt;br/&gt;keep whole matching tracts]
+    Q --&gt; J[st_join&lt;br/&gt;attach station or tract attributes]
+    Q --&gt; X[st_intersection&lt;br/&gt;create only overlapping pieces]
+    Q --&gt; U[st_union&lt;br/&gt;merge all service zones]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="why-st_filter-and-st_intersection-are-not-interchangeable" class="level3">
+<h3 class="anchored" data-anchor-id="why-st_filter-and-st_intersection-are-not-interchangeable">Why st_filter() and st_intersection() are not interchangeable</h3>
+<p>If a half-mile station buffer touches only a corner of a tract:</p>
+<ul>
+<li>st_filter(tracts, buffer) returns the complete tract.</li>
+<li>st_intersection(tracts, buffer) returns only the portion inside the buffer.</li>
+</ul>
+<p>Choose based on the research question. Counting every tract with any overlap is not the same as measuring how much tract area or population lies within the service zone.</p>
+</section>
+<section id="spatial-joins" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-joins">Spatial joins</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>stations_with_tract <span class="ot">&lt;-</span> <span class="fu">st_join</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  stations,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  tracts,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">join =</span> st_within</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This keeps station geometry and adds attributes of the tract containing each station. If one x feature matches multiple y features, st_join() can produce multiple output rows, so check the row count.</p>
+</section>
+</section>
+<section id="half-mile-station-access-example" class="level2">
+<h2 class="anchored" data-anchor-id="half-mile-station-access-example">11. Half-Mile Station Access Example</h2>
+<p>Research question: How many Census tracts are near a transit station?</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    S[Stations] --&gt; C[Transform to local projected CRS]
+    T[Census tracts] --&gt; C
+    C --&gt; B[Create half-mile station buffers]
+    B --&gt; F[Filter or intersect tracts]
+    F --&gt; N[Count, summarize, and map]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(units)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Both layers must use the same suitable projected CRS</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>stations_pa <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(stations, <span class="dv">2272</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>tracts_pa <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(tracts, <span class="dv">2272</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>half_mile <span class="ot">&lt;-</span> <span class="fu">set_units</span>(<span class="fl">0.5</span>, mi)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>station_buffers <span class="ot">&lt;-</span> <span class="fu">st_buffer</span>(stations_pa, <span class="at">dist =</span> half_mile)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Criterion: any part of the tract intersects any buffer</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>near_tracts <span class="ot">&lt;-</span> <span class="fu">st_filter</span>(</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  tracts_pa,</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  station_buffers,</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">.predicate =</span> st_intersects</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(near_tracts)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The result depends on the definition of near:</p>
+<ul>
+<li>Any-overlap rule: a tract counts when any part intersects the buffer. This can count a large tract touched only at one corner.</li>
+<li>Representative-point rule: test a centroid or st_point_on_surface() against the buffer. This is simpler but does not describe where residents actually live.</li>
+<li>Area or population share rule: intersect the tract with the buffer and calculate the portion covered. This is more informative but requires stronger assumptions and more work.</li>
+</ul>
+<p>To merge overlapping station buffers into one service area:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>service_area <span class="ot">&lt;-</span> <span class="fu">st_union</span>(station_buffers)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="distance-matrices-and-nearest-features" class="level2">
+<h2 class="anchored" data-anchor-id="distance-matrices-and-nearest-features">12. Distance Matrices and Nearest Features</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">st_distance</span>(stations_pa, tracts_pa)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>st_distance(x, y) returns a matrix:</p>
+<ul>
+<li>Rows correspond to features in x.</li>
+<li>Columns correspond to features in y.</li>
+<li>Cell [i, j] is the distance between x feature i and y feature j.</li>
+<li>Units follow the CRS and sf calculation method.</li>
+</ul>
+<p>For many features, the full matrix can be large. If the question is only nearest station, use st_nearest_feature() and then calculate paired distances:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>tract_points <span class="ot">&lt;-</span> <span class="fu">st_point_on_surface</span>(tracts_pa)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>nearest_id <span class="ot">&lt;-</span> <span class="fu">st_nearest_feature</span>(tract_points, stations_pa)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>tracts_pa <span class="ot">&lt;-</span> tracts_pa <span class="sc">|&gt;</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">nearest_station =</span> stations_pa<span class="sc">$</span>station_id[nearest_id],</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">station_distance =</span> <span class="fu">st_distance</span>(</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>      tract_points,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>      stations_pa[nearest_id, ],</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">by_element =</span> <span class="cn">TRUE</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="a-reliable-spatial-analysis-checklist" class="level2">
+<h2 class="anchored" data-anchor-id="a-reliable-spatial-analysis-checklist">13. A Reliable Spatial-Analysis Checklist</h2>
+<ol type="1">
+<li>Inspect both the attributes and geometry types.</li>
+<li>Confirm GEOID type, geography level, vintage, uniqueness, and missing values.</li>
+<li>Inspect each layer with st_crs().</li>
+<li>Use st_set_crs() only when the correct missing label is known.</li>
+<li>Use st_transform() to put layers in the CRS appropriate to the analysis.</li>
+<li>Confirm the units before distances, areas, or buffers.</li>
+<li>Choose the spatial predicate that matches the policy question.</li>
+<li>Decide whether features should remain whole or be clipped.</li>
+<li>Check output row counts, duplicated matches, NA values, empty geometries, and validity.</li>
+<li>Map the result as a visual quality check.</li>
+</ol>
+</section>
+<section id="reflection" class="level2">
+<h2 class="anchored" data-anchor-id="reflection">Reflection</h2>
+<p>This week helped me understand that a map is not separate from a data table. In sf, every row contains both attributes and a spatial feature, and either a shared key or a spatial relationship can connect datasets. I also learned that CRS choice is part of the analysis: assigning the wrong CRS label, measuring in unknown units, or choosing a projection that distorts the property I care about can make a technically successful workflow produce a wrong answer.</p>
+<p>The most important distinction for me is between selecting features and changing geometry. st_filter() keeps complete features that meet a condition, whereas st_intersection() creates the actual shared pieces. Before asking R to count tracts near a station, I must first define what near means.</p>
+</section>
+<section id="questions-i-still-have" class="level2">
+<h2 class="anchored" data-anchor-id="questions-i-still-have">Questions I Still Have</h2>
+<ul>
+<li>If tract boundaries change between two ACS releases, which crosswalk should I use before comparing the same neighborhood over time?</li>
+<li>For transit access, should a tract count when any part touches a buffer, when its representative point is inside, or when a certain share of residents is covered?</li>
+<li>How should I select an appropriate projected CRS when a study area crosses multiple UTM or State Plane zones?</li>
+<li>When a spatial join creates duplicate rows, what aggregation rule best matches the policy question?</li>
+</ul>
+
+
+<!-- -->
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const cellDetails = window.document.querySelectorAll(".cell details.code-fold");
+        for (let i=0; i<cellDetails.length; i++) {
+          const details = cellDetails[i];
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell div.sourceCode.cell-code");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 4: Spatial Data, Joins, CRS, and sf"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Joining Census tables and map geometries, choosing coordinate systems, and using sf for spatial relationships and analysis."</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-09-18</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">  echo: false</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>We connected ordinary Census tables to map geometries, compared attribute joins with spatial joins, and learned how the sf package stores spatial features in R. We then studied coordinate reference systems (CRSs), datums, projections, EPSG codes, UTM and State Plane systems, and the distortion tradeoffs involved in flattening the Earth onto a map.</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>The second half of the class introduced spatial predicates and operations: testing whether features intersect, touch, or fall within one another; creating buffers; selecting nearby tracts; joining attributes by location; finding common areas; combining shapes; and calculating distances.</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A GEOID is a Census geography identifier. Store it as character text so leading zeros are not lost.</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>An attribute join matches rows using a shared key such as GEOID; a spatial join matches features using their locations and shapes.</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>An sf object is a data-frame-like table with a special geometry column and CRS metadata.</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A CRS explains what coordinate numbers mean and where they locate features on Earth.</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_set_crs() assigns or repairs a CRS label; st_transform() actually recalculates coordinates in another CRS.</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Geographic CRSs normally use longitude and latitude in degrees. Projected CRSs use flat x/y coordinates, commonly in meters or feet.</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Every flat projection distorts something. Choose a projection according to the task: shape, area, distance, or direction.</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Spatial predicates answer yes/no relationship questions. Spatial transformations such as buffers, intersections, and unions create new geometry.</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a><span class="fu">## 1. Attribute Joins: Matching Tables by GEOID</span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>Suppose the two income tables are:</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GEOID <span class="pp">|</span> med_inc_23 <span class="pp">|</span></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---:</span> <span class="pp">|</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 100 <span class="pp">|</span> 82,000 <span class="pp">|</span></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 200 <span class="pp">|</span> 31,500 <span class="pp">|</span></span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 300 <span class="pp">|</span> 45,000 <span class="pp">|</span></span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GEOID <span class="pp">|</span> med_inc_15 <span class="pp">|</span></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---:</span> <span class="pp">|</span></span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 100 <span class="pp">|</span> 61,000 <span class="pp">|</span></span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 200 <span class="pp">|</span> 27,000 <span class="pp">|</span></span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 400 <span class="pp">|</span> 39,000 <span class="pp">|</span></span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>A valid join key must have the same meaning and compatible formatting in both tables. It is not enough for both columns to be named GEOID: both must represent the same geographic level and vintage, and values such as leading zeros must be preserved.</span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>    A[<span class="dv">2023</span> table&lt;br/&gt;<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">300</span>] --&gt; J{Join by GEOID}</span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>    B[<span class="dv">2015</span> table&lt;br/&gt;<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">400</span>] --&gt; J</span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a>    J --&gt; L[left_join&lt;br/&gt;<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">300</span>]</span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>    J --&gt; I[inner_join&lt;br/&gt;<span class="dv">100</span>, <span class="dv">200</span>]</span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>    J --&gt; F[full_join&lt;br/&gt;<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">300</span>, <span class="dv">400</span>]</span>
+<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a><span class="fu">### left_join()</span></span>
+<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a>income_joined <span class="ot">&lt;-</span> <span class="fu">left_join</span>(income_23, income_15, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span>
+<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a>Because income_23 is on the left, every 2023 row remains:</span>
+<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GEOID <span class="pp">|</span> med_inc_23 <span class="pp">|</span> med_inc_15 <span class="pp">|</span></span>
+<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---:</span> <span class="pp">| ---:</span> <span class="pp">|</span></span>
+<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 100 <span class="pp">|</span> 82,000 <span class="pp">|</span> 61,000 <span class="pp">|</span></span>
+<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 200 <span class="pp">|</span> 31,500 <span class="pp">|</span> 27,000 <span class="pp">|</span></span>
+<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 300 <span class="pp">|</span> 45,000 <span class="pp">|</span> NA <span class="pp">|</span></span>
+<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>GEOID 400 does not appear in this result because it exists only in the right-hand table. The original note incorrectly included 400 in the left_join() result; including all four GEOIDs would be a full_join().</span>
+<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a><span class="fu">### Join types</span></span>
+<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Join <span class="pp">|</span> Rows retained <span class="pp">|</span></span>
+<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">|</span></span>
+<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> left_join(x, y) <span class="pp">|</span> All keys from x; unmatched y values become NA <span class="pp">|</span></span>
+<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> inner_join(x, y) <span class="pp">|</span> Only keys appearing in both x and y <span class="pp">|</span></span>
+<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> full_join(x, y) <span class="pp">|</span> Every key appearing in either table <span class="pp">|</span></span>
+<span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> anti_join(x, y) <span class="pp">|</span> Rows in x with no match in y; useful for diagnosing failed matches <span class="pp">|</span></span>
+<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-80"><a href="#cb15-80" aria-hidden="true" tabindex="-1"></a>Always check a join rather than assuming it worked:</span>
+<span id="cb15-81"><a href="#cb15-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-82"><a href="#cb15-82" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-83"><a href="#cb15-83" aria-hidden="true" tabindex="-1"></a>income_joined <span class="sc">|&gt;</span></span>
+<span id="cb15-84"><a href="#cb15-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb15-85"><a href="#cb15-85" aria-hidden="true" tabindex="-1"></a>    <span class="at">rows =</span> <span class="fu">n</span>(),</span>
+<span id="cb15-86"><a href="#cb15-86" aria-hidden="true" tabindex="-1"></a>    <span class="at">missing_2015 =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(med_inc_15))</span>
+<span id="cb15-87"><a href="#cb15-87" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb15-88"><a href="#cb15-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-89"><a href="#cb15-89" aria-hidden="true" tabindex="-1"></a><span class="fu">anti_join</span>(income_23, income_15, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span>
+<span id="cb15-90"><a href="#cb15-90" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-91"><a href="#cb15-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-92"><a href="#cb15-92" aria-hidden="true" tabindex="-1"></a>Matching GEOIDs alone may still be misleading across years if Census boundaries changed. For time comparisons, confirm that the geographic vintage is consistent or use an appropriate crosswalk.</span>
+<span id="cb15-93"><a href="#cb15-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-94"><a href="#cb15-94" aria-hidden="true" tabindex="-1"></a><span class="fu">## 2. sf: Attributes and Geometry in One Table</span></span>
+<span id="cb15-95"><a href="#cb15-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-96"><a href="#cb15-96" aria-hidden="true" tabindex="-1"></a>sf means simple features. An sf object behaves like a data frame but also contains:</span>
+<span id="cb15-97"><a href="#cb15-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-98"><a href="#cb15-98" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Ordinary attribute columns such as GEOID, population, or income.</span>
+<span id="cb15-99"><a href="#cb15-99" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>A geometry column containing POINT, LINESTRING, POLYGON, or multipart geometries.</span>
+<span id="cb15-100"><a href="#cb15-100" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>CRS metadata describing the coordinate system.</span>
+<span id="cb15-101"><a href="#cb15-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-102"><a href="#cb15-102" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GEOID <span class="pp">|</span> med_inc_23 <span class="pp">|</span> geometry <span class="pp">|</span></span>
+<span id="cb15-103"><a href="#cb15-103" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---:</span> <span class="pp">| ---</span> <span class="pp">|</span></span>
+<span id="cb15-104"><a href="#cb15-104" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 42101000100 <span class="pp">|</span> 82,000 <span class="pp">|</span> POLYGON (...) <span class="pp">|</span></span>
+<span id="cb15-105"><a href="#cb15-105" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 42101000200 <span class="pp">|</span> 31,500 <span class="pp">|</span> POLYGON (...) <span class="pp">|</span></span>
+<span id="cb15-106"><a href="#cb15-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-107"><a href="#cb15-107" aria-hidden="true" tabindex="-1"></a>The geometry column is often described as sticky: when an sf object is the left table in a normal dplyr operation, its geometry usually remains attached.</span>
+<span id="cb15-108"><a href="#cb15-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-109"><a href="#cb15-109" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-110"><a href="#cb15-110" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb15-111"><a href="#cb15-111" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb15-112"><a href="#cb15-112" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidycensus)</span>
+<span id="cb15-113"><a href="#cb15-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-114"><a href="#cb15-114" aria-hidden="true" tabindex="-1"></a>tracts <span class="ot">&lt;-</span> <span class="fu">get_acs</span>(</span>
+<span id="cb15-115"><a href="#cb15-115" aria-hidden="true" tabindex="-1"></a>  <span class="at">geography =</span> <span class="st">"tract"</span>,</span>
+<span id="cb15-116"><a href="#cb15-116" aria-hidden="true" tabindex="-1"></a>  <span class="at">variables =</span> <span class="fu">c</span>(<span class="at">median_income =</span> <span class="st">"B19013_001"</span>),</span>
+<span id="cb15-117"><a href="#cb15-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">state =</span> <span class="st">"PA"</span>,</span>
+<span id="cb15-118"><a href="#cb15-118" aria-hidden="true" tabindex="-1"></a>  <span class="at">county =</span> <span class="st">"Philadelphia"</span>,</span>
+<span id="cb15-119"><a href="#cb15-119" aria-hidden="true" tabindex="-1"></a>  <span class="at">year =</span> <span class="dv">2023</span>,</span>
+<span id="cb15-120"><a href="#cb15-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span>,</span>
+<span id="cb15-121"><a href="#cb15-121" aria-hidden="true" tabindex="-1"></a>  <span class="at">geometry =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-122"><a href="#cb15-122" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-123"><a href="#cb15-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-124"><a href="#cb15-124" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(tracts)</span>
+<span id="cb15-125"><a href="#cb15-125" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry_type</span>(tracts)</span>
+<span id="cb15-126"><a href="#cb15-126" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)</span>
+<span id="cb15-127"><a href="#cb15-127" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-128"><a href="#cb15-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-129"><a href="#cb15-129" aria-hidden="true" tabindex="-1"></a>For an attribute join, normally join a plain table onto the sf layer:</span>
+<span id="cb15-130"><a href="#cb15-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-131"><a href="#cb15-131" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-132"><a href="#cb15-132" aria-hidden="true" tabindex="-1"></a>tracts_with_data <span class="ot">&lt;-</span> <span class="fu">left_join</span>(tracts, income_table, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span>
+<span id="cb15-133"><a href="#cb15-133" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-134"><a href="#cb15-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-135"><a href="#cb15-135" aria-hidden="true" tabindex="-1"></a>If both inputs are sf objects but the match is based on a key rather than location, drop geometry from the right table first:</span>
+<span id="cb15-136"><a href="#cb15-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-137"><a href="#cb15-137" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-138"><a href="#cb15-138" aria-hidden="true" tabindex="-1"></a>joined <span class="ot">&lt;-</span> <span class="fu">left_join</span>(spatial_x, <span class="fu">st_drop_geometry</span>(spatial_y), <span class="at">by =</span> <span class="st">"GEOID"</span>)</span>
+<span id="cb15-139"><a href="#cb15-139" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-140"><a href="#cb15-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-141"><a href="#cb15-141" aria-hidden="true" tabindex="-1"></a><span class="fu">### Common spatial formats</span></span>
+<span id="cb15-142"><a href="#cb15-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-143"><a href="#cb15-143" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A shapefile is not only one .shp file. It normally includes .shp geometry, .shx index, .dbf attributes, and .prj CRS information. Keep the companion files together.</span>
+<span id="cb15-144"><a href="#cb15-144" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A file geodatabase has a .gdb extension and is usually a folder containing multiple layers.</span>
+<span id="cb15-145"><a href="#cb15-145" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GeoPackage (.gpkg) is a modern single-file container that can hold several vector layers.</span>
+<span id="cb15-146"><a href="#cb15-146" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_read() or read_sf() reads supported vector layers into sf.</span>
+<span id="cb15-147"><a href="#cb15-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-148"><a href="#cb15-148" aria-hidden="true" tabindex="-1"></a><span class="fu">## 3. What a CRS Does</span></span>
+<span id="cb15-149"><a href="#cb15-149" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-150"><a href="#cb15-150" aria-hidden="true" tabindex="-1"></a>A CRS answers four questions:</span>
+<span id="cb15-151"><a href="#cb15-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-152"><a href="#cb15-152" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>What model of Earth is being used?</span>
+<span id="cb15-153"><a href="#cb15-153" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Where is that model anchored relative to Earth?</span>
+<span id="cb15-154"><a href="#cb15-154" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>How are locations represented as coordinates?</span>
+<span id="cb15-155"><a href="#cb15-155" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>What units and axis conventions do those coordinates use?</span>
+<span id="cb15-156"><a href="#cb15-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-159"><a href="#cb15-159" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-160"><a href="#cb15-160" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb15-161"><a href="#cb15-161" aria-hidden="true" tabindex="-1"></a>    E[Real Earth] --&gt; D[Datum <span class="ot">and</span> ellipsoid&lt;br/&gt;model <span class="ot">and</span> anchor]</span>
+<span id="cb15-162"><a href="#cb15-162" aria-hidden="true" tabindex="-1"></a>    D --&gt; G[Geographic CRS&lt;br/&gt;longitude <span class="ot">and</span> latitude]</span>
+<span id="cb15-163"><a href="#cb15-163" aria-hidden="true" tabindex="-1"></a>    G --&gt; P[Map projection]</span>
+<span id="cb15-164"><a href="#cb15-164" aria-hidden="true" tabindex="-1"></a>    P --&gt; C[Projected CRS&lt;br/&gt;x <span class="ot">and</span> y in linear units]</span>
+<span id="cb15-165"><a href="#cb15-165" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-166"><a href="#cb15-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-167"><a href="#cb15-167" aria-hidden="true" tabindex="-1"></a><span class="fu">### Geographic CRS</span></span>
+<span id="cb15-168"><a href="#cb15-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-169"><a href="#cb15-169" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Represents longitude and latitude on an ellipsoid.</span>
+<span id="cb15-170"><a href="#cb15-170" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Coordinate values are angular, normally degrees.</span>
+<span id="cb15-171"><a href="#cb15-171" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Useful for data exchange, GPS, and global reference.</span>
+<span id="cb15-172"><a href="#cb15-172" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A degree is not a fixed ground distance: one degree of longitude becomes shorter toward the poles.</span>
+<span id="cb15-173"><a href="#cb15-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-174"><a href="#cb15-174" aria-hidden="true" tabindex="-1"></a><span class="fu">### Projected CRS</span></span>
+<span id="cb15-175"><a href="#cb15-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-176"><a href="#cb15-176" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Converts locations to a flat x/y grid.</span>
+<span id="cb15-177"><a href="#cb15-177" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Units are usually meters or feet.</span>
+<span id="cb15-178"><a href="#cb15-178" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Designed for a particular region and purpose.</span>
+<span id="cb15-179"><a href="#cb15-179" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Often preferable for local buffers, Euclidean distances, and areas because the units are explicit and distortion can be controlled locally.</span>
+<span id="cb15-180"><a href="#cb15-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-181"><a href="#cb15-181" aria-hidden="true" tabindex="-1"></a>Modern sf can perform geodesic calculations on longitude/latitude data, but for a local policy analysis it is still important to choose and document an appropriate projected CRS before interpreting feet, meters, areas, or buffer radii.</span>
+<span id="cb15-182"><a href="#cb15-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-183"><a href="#cb15-183" aria-hidden="true" tabindex="-1"></a><span class="fu">## 4. Ellipsoids and Datums</span></span>
+<span id="cb15-184"><a href="#cb15-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-185"><a href="#cb15-185" aria-hidden="true" tabindex="-1"></a>An ellipsoid approximates Earth's shape. A datum connects that model to the real Earth and supplies a reference frame. GRS 80 is an ellipsoid; NAD 83 is a datum/reference system built on it.</span>
+<span id="cb15-186"><a href="#cb15-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-187"><a href="#cb15-187" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reference <span class="pp">|</span> Main idea <span class="pp">|</span></span>
+<span id="cb15-188"><a href="#cb15-188" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">|</span></span>
+<span id="cb15-189"><a href="#cb15-189" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> NAD 27 <span class="pp">|</span> North American Datum of 1927; based on the Clarke 1866 ellipsoid and anchored at Meades Ranch, Kansas <span class="pp">|</span></span>
+<span id="cb15-190"><a href="#cb15-190" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> NAD 83 <span class="pp">|</span> North American Datum of 1983; based on GRS 80 and designed as an Earth-centered reference system <span class="pp">|</span></span>
+<span id="cb15-191"><a href="#cb15-191" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> WGS 84 <span class="pp">|</span> Global Earth-centered reference system used by GPS and much worldwide data <span class="pp">|</span></span>
+<span id="cb15-192"><a href="#cb15-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-193"><a href="#cb15-193" aria-hidden="true" tabindex="-1"></a>Coordinates for the same physical place can differ between datums. A CRS label is therefore essential; longitude and latitude numbers without a datum are incomplete information.</span>
+<span id="cb15-194"><a href="#cb15-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-195"><a href="#cb15-195" aria-hidden="true" tabindex="-1"></a><span class="fu">## 5. Flattening Earth: Projection Families and Distortion</span></span>
+<span id="cb15-196"><a href="#cb15-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-197"><a href="#cb15-197" aria-hidden="true" tabindex="-1"></a>A globe cannot be flattened without stretching, tearing, or compressing it. A map projection chooses where and how distortion occurs.</span>
+<span id="cb15-198"><a href="#cb15-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-201"><a href="#cb15-201" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-202"><a href="#cb15-202" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb15-203"><a href="#cb15-203" aria-hidden="true" tabindex="-1"></a>    E[Curved Earth] --&gt; CY[Cylindrical]</span>
+<span id="cb15-204"><a href="#cb15-204" aria-hidden="true" tabindex="-1"></a>    E --&gt; CO[Conic]</span>
+<span id="cb15-205"><a href="#cb15-205" aria-hidden="true" tabindex="-1"></a>    E --&gt; AZ[Planar <span class="ot">or</span> azimuthal]</span>
+<span id="cb15-206"><a href="#cb15-206" aria-hidden="true" tabindex="-1"></a>    CY --&gt; TM[Transverse Mercator&lt;br/&gt;used by UTM]</span>
+<span id="cb15-207"><a href="#cb15-207" aria-hidden="true" tabindex="-1"></a>    CO --&gt; LCC[Lambert conformal conic&lt;br/&gt;common in State Plane]</span>
+<span id="cb15-208"><a href="#cb15-208" aria-hidden="true" tabindex="-1"></a>    CO --&gt; AEA[Albers equal area&lt;br/&gt;regional area analysis]</span>
+<span id="cb15-209"><a href="#cb15-209" aria-hidden="true" tabindex="-1"></a>    AZ --&gt; LOCAL[Directions <span class="ot">or</span> distances&lt;br/&gt;from a selected center]</span>
+<span id="cb15-210"><a href="#cb15-210" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-211"><a href="#cb15-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-212"><a href="#cb15-212" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Cylindrical: imagine wrapping a cylinder around Earth. A transverse cylinder is turned sideways so its line of best fit follows a meridian.</span>
+<span id="cb15-213"><a href="#cb15-213" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Conic: imagine placing a cone over Earth. It works well for mid-latitude regions that extend east–west.</span>
+<span id="cb15-214"><a href="#cb15-214" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Planar or azimuthal: project onto a plane touching at a point; often useful around a chosen center.</span>
+<span id="cb15-215"><a href="#cb15-215" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Tangent projections touch at one line or point; secant projections cut through and create two standard lines. Distortion is lowest along the standard line(s) or point and generally increases away from them.</span>
+<span id="cb15-216"><a href="#cb15-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-217"><a href="#cb15-217" aria-hidden="true" tabindex="-1"></a><span class="fu">### What can a projection preserve?</span></span>
+<span id="cb15-218"><a href="#cb15-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-219"><a href="#cb15-219" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Property <span class="pp">|</span> What it preserves <span class="pp">|</span> What it does not guarantee <span class="pp">|</span></span>
+<span id="cb15-220"><a href="#cb15-220" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">|</span></span>
+<span id="cb15-221"><a href="#cb15-221" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Conformal <span class="pp">|</span> Local angles and small shapes <span class="pp">|</span> Correct area or distance everywhere <span class="pp">|</span></span>
+<span id="cb15-222"><a href="#cb15-222" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Equal-area <span class="pp">|</span> Relative area <span class="pp">|</span> Local shape and all distances <span class="pp">|</span></span>
+<span id="cb15-223"><a href="#cb15-223" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Equidistant <span class="pp">|</span> Selected distances from particular lines or points <span class="pp">|</span> Every distance between every pair of locations <span class="pp">|</span></span>
+<span id="cb15-224"><a href="#cb15-224" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> True-direction / azimuthal <span class="pp">|</span> Directions from a selected center <span class="pp">|</span> Shape, area, and distance everywhere <span class="pp">|</span></span>
+<span id="cb15-225"><a href="#cb15-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-226"><a href="#cb15-226" aria-hidden="true" tabindex="-1"></a>No flat map preserves shape, area, distance, and direction everywhere at the same time. The correct projection depends on the research question.</span>
+<span id="cb15-227"><a href="#cb15-227" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-228"><a href="#cb15-228" aria-hidden="true" tabindex="-1"></a><span class="fu">## 6. EPSG Codes Used in Class</span></span>
+<span id="cb15-229"><a href="#cb15-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-230"><a href="#cb15-230" aria-hidden="true" tabindex="-1"></a>An EPSG code is a compact identifier for a particular CRS definition. The code is not a quality ranking; it simply points to a documented coordinate system.</span>
+<span id="cb15-231"><a href="#cb15-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-232"><a href="#cb15-232" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> EPSG <span class="pp">|</span> CRS <span class="pp">|</span> Type <span class="pp">|</span> Typical units / use <span class="pp">|</span></span>
+<span id="cb15-233"><a href="#cb15-233" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---:</span> <span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">|</span></span>
+<span id="cb15-234"><a href="#cb15-234" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 4326 <span class="pp">|</span> WGS 84 <span class="pp">|</span> Geographic <span class="pp">|</span> Degrees; GPS and global exchange <span class="pp">|</span></span>
+<span id="cb15-235"><a href="#cb15-235" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 4269 <span class="pp">|</span> NAD 83 <span class="pp">|</span> Geographic <span class="pp">|</span> Degrees; North American data <span class="pp">|</span></span>
+<span id="cb15-236"><a href="#cb15-236" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 2272 <span class="pp">|</span> NAD83 / Pennsylvania South (ftUS) <span class="pp">|</span> Projected State Plane <span class="pp">|</span> US survey feet; southern Pennsylvania local analysis <span class="pp">|</span></span>
+<span id="cb15-237"><a href="#cb15-237" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 5070 <span class="pp">|</span> NAD83 / Conus Albers <span class="pp">|</span> Projected equal-area <span class="pp">|</span> Meters; area comparisons across the conterminous US <span class="pp">|</span></span>
+<span id="cb15-238"><a href="#cb15-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-239"><a href="#cb15-239" aria-hidden="true" tabindex="-1"></a>Check the CRS instead of guessing from the coordinate values:</span>
+<span id="cb15-240"><a href="#cb15-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-241"><a href="#cb15-241" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-242"><a href="#cb15-242" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)</span>
+<span id="cb15-243"><a href="#cb15-243" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)<span class="sc">$</span>epsg</span>
+<span id="cb15-244"><a href="#cb15-244" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(tracts)<span class="sc">$</span>units_gdal</span>
+<span id="cb15-245"><a href="#cb15-245" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-246"><a href="#cb15-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-247"><a href="#cb15-247" aria-hidden="true" tabindex="-1"></a><span class="fu">## 7. st_set_crs() Is Not st_transform()</span></span>
+<span id="cb15-248"><a href="#cb15-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-249"><a href="#cb15-249" aria-hidden="true" tabindex="-1"></a>This distinction is essential:</span>
+<span id="cb15-250"><a href="#cb15-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-253"><a href="#cb15-253" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-254"><a href="#cb15-254" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb15-255"><a href="#cb15-255" aria-hidden="true" tabindex="-1"></a>    A[Coordinates have <span class="fu">no</span> label&lt;br/&gt;but true CRS is known] --&gt;|st_set_crs <span class="dv">2272</span>| B[Same coordinate numbers&lt;br/&gt;correct CRS metadata added]</span>
+<span id="cb15-256"><a href="#cb15-256" aria-hidden="true" tabindex="-1"></a>    B --&gt;|st_transform <span class="dv">4326</span>| C[New coordinate numbers&lt;br/&gt;same real-world locations]</span>
+<span id="cb15-257"><a href="#cb15-257" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-258"><a href="#cb15-258" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-259"><a href="#cb15-259" aria-hidden="true" tabindex="-1"></a><span class="fu">### st_set_crs()</span></span>
+<span id="cb15-260"><a href="#cb15-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-261"><a href="#cb15-261" aria-hidden="true" tabindex="-1"></a>Use only when coordinates already belong to a known CRS but the CRS metadata is missing or incorrect.</span>
+<span id="cb15-262"><a href="#cb15-262" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-263"><a href="#cb15-263" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-264"><a href="#cb15-264" aria-hidden="true" tabindex="-1"></a>roads <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(roads, <span class="dv">2272</span>)</span>
+<span id="cb15-265"><a href="#cb15-265" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-266"><a href="#cb15-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-267"><a href="#cb15-267" aria-hidden="true" tabindex="-1"></a>This changes the label, not the coordinate numbers and not the locations. Assigning the wrong label makes the data incorrect.</span>
+<span id="cb15-268"><a href="#cb15-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-269"><a href="#cb15-269" aria-hidden="true" tabindex="-1"></a><span class="fu">### st_transform()</span></span>
+<span id="cb15-270"><a href="#cb15-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-271"><a href="#cb15-271" aria-hidden="true" tabindex="-1"></a>Use when the layer already has the correct source CRS and you want a new CRS.</span>
+<span id="cb15-272"><a href="#cb15-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-273"><a href="#cb15-273" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-274"><a href="#cb15-274" aria-hidden="true" tabindex="-1"></a>roads_wgs84 <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(roads, <span class="dv">4326</span>)</span>
+<span id="cb15-275"><a href="#cb15-275" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-276"><a href="#cb15-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-277"><a href="#cb15-277" aria-hidden="true" tabindex="-1"></a>This recalculates all coordinate numbers while preserving the same real-world locations. Before combining spatial layers, make their CRSs compatible:</span>
+<span id="cb15-278"><a href="#cb15-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-279"><a href="#cb15-279" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-280"><a href="#cb15-280" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(stations) <span class="sc">==</span> <span class="fu">st_crs</span>(tracts)</span>
+<span id="cb15-281"><a href="#cb15-281" aria-hidden="true" tabindex="-1"></a>stations <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(stations, <span class="fu">st_crs</span>(tracts))</span>
+<span id="cb15-282"><a href="#cb15-282" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-283"><a href="#cb15-283" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-284"><a href="#cb15-284" aria-hidden="true" tabindex="-1"></a><span class="fu">## 8. UTM and State Plane Systems</span></span>
+<span id="cb15-285"><a href="#cb15-285" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-286"><a href="#cb15-286" aria-hidden="true" tabindex="-1"></a><span class="fu">### UTM</span></span>
+<span id="cb15-287"><a href="#cb15-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-288"><a href="#cb15-288" aria-hidden="true" tabindex="-1"></a>The Universal Transverse Mercator system divides the world into 60 longitudinal zones, each approximately 6 degrees wide. Each zone uses its own transverse Mercator projection and meter coordinates.</span>
+<span id="cb15-289"><a href="#cb15-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-292"><a href="#cb15-292" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-293"><a href="#cb15-293" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb15-294"><a href="#cb15-294" aria-hidden="true" tabindex="-1"></a>    W[World longitude] --&gt; Z1[Zone <span class="dv">1</span>&lt;br/&gt;<span class="dv">6</span> degrees]</span>
+<span id="cb15-295"><a href="#cb15-295" aria-hidden="true" tabindex="-1"></a>    W --&gt; Z2[Zone <span class="dv">2</span>&lt;br/&gt;<span class="dv">6</span> degrees]</span>
+<span id="cb15-296"><a href="#cb15-296" aria-hidden="true" tabindex="-1"></a>    W --&gt; DOT[...]</span>
+<span id="cb15-297"><a href="#cb15-297" aria-hidden="true" tabindex="-1"></a>    W --&gt; Z18[Zone <span class="dv">18</span>N&lt;br/&gt;Philadelphia region]</span>
+<span id="cb15-298"><a href="#cb15-298" aria-hidden="true" tabindex="-1"></a>    W --&gt; Z60[Zone <span class="dv">60</span>&lt;br/&gt;<span class="dv">6</span> degrees]</span>
+<span id="cb15-299"><a href="#cb15-299" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-300"><a href="#cb15-300" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-301"><a href="#cb15-301" aria-hidden="true" tabindex="-1"></a>A central meridian runs through each zone. UTM assigns a false easting of 500,000 meters at that meridian so ordinary zone coordinates avoid negative eastings. Southern-hemisphere zones also use a false northing. A coordinate such as x = 500,000 and y = 4,400,000 has meaning only together with its UTM zone and hemisphere.</span>
+<span id="cb15-302"><a href="#cb15-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-303"><a href="#cb15-303" aria-hidden="true" tabindex="-1"></a><span class="fu">### State Plane</span></span>
+<span id="cb15-304"><a href="#cb15-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-305"><a href="#cb15-305" aria-hidden="true" tabindex="-1"></a>The State Plane Coordinate System divides US states into one or more zones designed for accurate local work. Pennsylvania has North and South zones. EPSG:2272 is the NAD83 Pennsylvania South definition in US survey feet. Do not assume that every State Plane layer uses feet: definitions may use meters or feet, so inspect the exact EPSG record.</span>
+<span id="cb15-306"><a href="#cb15-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-307"><a href="#cb15-307" aria-hidden="true" tabindex="-1"></a><span class="fu">## 9. Spatial Predicates: What Relationship Do the Shapes Have?</span></span>
+<span id="cb15-308"><a href="#cb15-308" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-309"><a href="#cb15-309" aria-hidden="true" tabindex="-1"></a>Imagine polygon A next to B, while smaller polygon C lies inside A:</span>
+<span id="cb15-310"><a href="#cb15-310" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-313"><a href="#cb15-313" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-314"><a href="#cb15-314" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb15-315"><a href="#cb15-315" aria-hidden="true" tabindex="-1"></a>    A[Polygon A] ---|touches boundary| B[Polygon B]</span>
+<span id="cb15-316"><a href="#cb15-316" aria-hidden="true" tabindex="-1"></a>    C[Polygon C] --&gt;|within| A</span>
+<span id="cb15-317"><a href="#cb15-317" aria-hidden="true" tabindex="-1"></a>    A --&gt;|contains| C</span>
+<span id="cb15-318"><a href="#cb15-318" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-319"><a href="#cb15-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-320"><a href="#cb15-320" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Predicate <span class="pp">|</span> Question <span class="pp">|</span> A–B <span class="pp">|</span> A–C <span class="pp">|</span> C–A <span class="pp">|</span> A–A <span class="pp">|</span></span>
+<span id="cb15-321"><a href="#cb15-321" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">| :---:</span> <span class="pp">| :---:</span> <span class="pp">| :---:</span> <span class="pp">| :---:</span> <span class="pp">|</span></span>
+<span id="cb15-322"><a href="#cb15-322" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_intersects() <span class="pp">|</span> Do the features share any point? <span class="pp">|</span> TRUE <span class="pp">|</span> TRUE <span class="pp">|</span> TRUE <span class="pp">|</span> TRUE <span class="pp">|</span></span>
+<span id="cb15-323"><a href="#cb15-323" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_touches() <span class="pp">|</span> Do boundaries meet while interiors do not overlap? <span class="pp">|</span> TRUE <span class="pp">|</span> FALSE <span class="pp">|</span> FALSE <span class="pp">|</span> FALSE <span class="pp">|</span></span>
+<span id="cb15-324"><a href="#cb15-324" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_within() <span class="pp">|</span> Is the first feature inside the second? <span class="pp">|</span> FALSE <span class="pp">|</span> FALSE <span class="pp">|</span> TRUE <span class="pp">|</span> TRUE <span class="pp">|</span></span>
+<span id="cb15-325"><a href="#cb15-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-326"><a href="#cb15-326" aria-hidden="true" tabindex="-1"></a>Important details:</span>
+<span id="cb15-327"><a href="#cb15-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-328"><a href="#cb15-328" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_intersects() is broad: touching, overlapping, containment, and equality can all count as intersection.</span>
+<span id="cb15-329"><a href="#cb15-329" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_touches() is usually better for finding neighboring polygons because a feature does not touch itself.</span>
+<span id="cb15-330"><a href="#cb15-330" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_within(x, y) has an order: it asks whether x is within y.</span>
+<span id="cb15-331"><a href="#cb15-331" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Spatial predicates normally return sparse relationship lists or logical relationships; they do not automatically create clipped shapes.</span>
+<span id="cb15-332"><a href="#cb15-332" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-333"><a href="#cb15-333" aria-hidden="true" tabindex="-1"></a><span class="fu">## 10. Selecting, Joining, and Changing Geometry</span></span>
+<span id="cb15-334"><a href="#cb15-334" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-335"><a href="#cb15-335" aria-hidden="true" tabindex="-1"></a>These functions answer different questions:</span>
+<span id="cb15-336"><a href="#cb15-336" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-337"><a href="#cb15-337" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Function <span class="pp">|</span> Main result <span class="pp">|</span> Does geometry change? <span class="pp">|</span></span>
+<span id="cb15-338"><a href="#cb15-338" aria-hidden="true" tabindex="-1"></a><span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">| ---</span> <span class="pp">|</span></span>
+<span id="cb15-339"><a href="#cb15-339" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_filter(x, y) <span class="pp">|</span> Rows of x satisfying a spatial predicate with y <span class="pp">|</span> No; selected x geometries remain whole <span class="pp">|</span></span>
+<span id="cb15-340"><a href="#cb15-340" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_join(x, y) <span class="pp">|</span> x features plus matching attributes from y <span class="pp">|</span> Normally keeps x geometry <span class="pp">|</span></span>
+<span id="cb15-341"><a href="#cb15-341" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_intersection(x, y) <span class="pp">|</span> Shared pieces of x and y <span class="pp">|</span> Yes; features may be clipped or split <span class="pp">|</span></span>
+<span id="cb15-342"><a href="#cb15-342" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_union(x) <span class="pp">|</span> Combined geometry <span class="pp">|</span> Yes; boundaries may dissolve <span class="pp">|</span></span>
+<span id="cb15-343"><a href="#cb15-343" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_buffer(x, dist) <span class="pp">|</span> Zones at a specified distance around x <span class="pp">|</span> Yes; creates new polygons <span class="pp">|</span></span>
+<span id="cb15-344"><a href="#cb15-344" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> st_distance(x, y) <span class="pp">|</span> Pairwise distance matrix <span class="pp">|</span> No <span class="pp">|</span></span>
+<span id="cb15-345"><a href="#cb15-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-348"><a href="#cb15-348" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-349"><a href="#cb15-349" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb15-350"><a href="#cb15-350" aria-hidden="true" tabindex="-1"></a>    Q[Which tracts are near a station?] --&gt; F[st_filter&lt;br/&gt;keep whole matching tracts]</span>
+<span id="cb15-351"><a href="#cb15-351" aria-hidden="true" tabindex="-1"></a>    Q --&gt; J[st_join&lt;br/&gt;attach station <span class="ot">or</span> tract attributes]</span>
+<span id="cb15-352"><a href="#cb15-352" aria-hidden="true" tabindex="-1"></a>    Q --&gt; X[st_intersection&lt;br/&gt;create only overlapping pieces]</span>
+<span id="cb15-353"><a href="#cb15-353" aria-hidden="true" tabindex="-1"></a>    Q --&gt; U[st_union&lt;br/&gt;merge all service zones]</span>
+<span id="cb15-354"><a href="#cb15-354" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-355"><a href="#cb15-355" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-356"><a href="#cb15-356" aria-hidden="true" tabindex="-1"></a><span class="fu">### Why st_filter() and st_intersection() are not interchangeable</span></span>
+<span id="cb15-357"><a href="#cb15-357" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-358"><a href="#cb15-358" aria-hidden="true" tabindex="-1"></a>If a half-mile station buffer touches only a corner of a tract:</span>
+<span id="cb15-359"><a href="#cb15-359" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-360"><a href="#cb15-360" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_filter(tracts, buffer) returns the complete tract.</span>
+<span id="cb15-361"><a href="#cb15-361" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>st_intersection(tracts, buffer) returns only the portion inside the buffer.</span>
+<span id="cb15-362"><a href="#cb15-362" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-363"><a href="#cb15-363" aria-hidden="true" tabindex="-1"></a>Choose based on the research question. Counting every tract with any overlap is not the same as measuring how much tract area or population lies within the service zone.</span>
+<span id="cb15-364"><a href="#cb15-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-365"><a href="#cb15-365" aria-hidden="true" tabindex="-1"></a><span class="fu">### Spatial joins</span></span>
+<span id="cb15-366"><a href="#cb15-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-367"><a href="#cb15-367" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-368"><a href="#cb15-368" aria-hidden="true" tabindex="-1"></a>stations_with_tract <span class="ot">&lt;-</span> <span class="fu">st_join</span>(</span>
+<span id="cb15-369"><a href="#cb15-369" aria-hidden="true" tabindex="-1"></a>  stations,</span>
+<span id="cb15-370"><a href="#cb15-370" aria-hidden="true" tabindex="-1"></a>  tracts,</span>
+<span id="cb15-371"><a href="#cb15-371" aria-hidden="true" tabindex="-1"></a>  <span class="at">join =</span> st_within</span>
+<span id="cb15-372"><a href="#cb15-372" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-373"><a href="#cb15-373" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-374"><a href="#cb15-374" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-375"><a href="#cb15-375" aria-hidden="true" tabindex="-1"></a>This keeps station geometry and adds attributes of the tract containing each station. If one x feature matches multiple y features, st_join() can produce multiple output rows, so check the row count.</span>
+<span id="cb15-376"><a href="#cb15-376" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-377"><a href="#cb15-377" aria-hidden="true" tabindex="-1"></a><span class="fu">## 11. Half-Mile Station Access Example</span></span>
+<span id="cb15-378"><a href="#cb15-378" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-379"><a href="#cb15-379" aria-hidden="true" tabindex="-1"></a>Research question: How many Census tracts are near a transit station?</span>
+<span id="cb15-380"><a href="#cb15-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-383"><a href="#cb15-383" aria-hidden="true" tabindex="-1"></a><span class="in">```{mermaid}</span></span>
+<span id="cb15-384"><a href="#cb15-384" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb15-385"><a href="#cb15-385" aria-hidden="true" tabindex="-1"></a>    S[Stations] --&gt; C[Transform to <span class="kw">local</span> projected CRS]</span>
+<span id="cb15-386"><a href="#cb15-386" aria-hidden="true" tabindex="-1"></a>    T[Census tracts] --&gt; C</span>
+<span id="cb15-387"><a href="#cb15-387" aria-hidden="true" tabindex="-1"></a>    C --&gt; B[Create half-mile station buffers]</span>
+<span id="cb15-388"><a href="#cb15-388" aria-hidden="true" tabindex="-1"></a>    B --&gt; F[Filter <span class="ot">or</span> intersect tracts]</span>
+<span id="cb15-389"><a href="#cb15-389" aria-hidden="true" tabindex="-1"></a>    F --&gt; N[Count, summarize, <span class="ot">and</span> <span class="fu">map</span>]</span>
+<span id="cb15-390"><a href="#cb15-390" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-391"><a href="#cb15-391" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-392"><a href="#cb15-392" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-393"><a href="#cb15-393" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb15-394"><a href="#cb15-394" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb15-395"><a href="#cb15-395" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(units)</span>
+<span id="cb15-396"><a href="#cb15-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-397"><a href="#cb15-397" aria-hidden="true" tabindex="-1"></a><span class="co"># Both layers must use the same suitable projected CRS</span></span>
+<span id="cb15-398"><a href="#cb15-398" aria-hidden="true" tabindex="-1"></a>stations_pa <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(stations, <span class="dv">2272</span>)</span>
+<span id="cb15-399"><a href="#cb15-399" aria-hidden="true" tabindex="-1"></a>tracts_pa <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(tracts, <span class="dv">2272</span>)</span>
+<span id="cb15-400"><a href="#cb15-400" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-401"><a href="#cb15-401" aria-hidden="true" tabindex="-1"></a>half_mile <span class="ot">&lt;-</span> <span class="fu">set_units</span>(<span class="fl">0.5</span>, mi)</span>
+<span id="cb15-402"><a href="#cb15-402" aria-hidden="true" tabindex="-1"></a>station_buffers <span class="ot">&lt;-</span> <span class="fu">st_buffer</span>(stations_pa, <span class="at">dist =</span> half_mile)</span>
+<span id="cb15-403"><a href="#cb15-403" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-404"><a href="#cb15-404" aria-hidden="true" tabindex="-1"></a><span class="co"># Criterion: any part of the tract intersects any buffer</span></span>
+<span id="cb15-405"><a href="#cb15-405" aria-hidden="true" tabindex="-1"></a>near_tracts <span class="ot">&lt;-</span> <span class="fu">st_filter</span>(</span>
+<span id="cb15-406"><a href="#cb15-406" aria-hidden="true" tabindex="-1"></a>  tracts_pa,</span>
+<span id="cb15-407"><a href="#cb15-407" aria-hidden="true" tabindex="-1"></a>  station_buffers,</span>
+<span id="cb15-408"><a href="#cb15-408" aria-hidden="true" tabindex="-1"></a>  <span class="at">.predicate =</span> st_intersects</span>
+<span id="cb15-409"><a href="#cb15-409" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-410"><a href="#cb15-410" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-411"><a href="#cb15-411" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(near_tracts)</span>
+<span id="cb15-412"><a href="#cb15-412" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-413"><a href="#cb15-413" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-414"><a href="#cb15-414" aria-hidden="true" tabindex="-1"></a>The result depends on the definition of near:</span>
+<span id="cb15-415"><a href="#cb15-415" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-416"><a href="#cb15-416" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Any-overlap rule: a tract counts when any part intersects the buffer. This can count a large tract touched only at one corner.</span>
+<span id="cb15-417"><a href="#cb15-417" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Representative-point rule: test a centroid or st_point_on_surface() against the buffer. This is simpler but does not describe where residents actually live.</span>
+<span id="cb15-418"><a href="#cb15-418" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Area or population share rule: intersect the tract with the buffer and calculate the portion covered. This is more informative but requires stronger assumptions and more work.</span>
+<span id="cb15-419"><a href="#cb15-419" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-420"><a href="#cb15-420" aria-hidden="true" tabindex="-1"></a>To merge overlapping station buffers into one service area:</span>
+<span id="cb15-421"><a href="#cb15-421" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-422"><a href="#cb15-422" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-423"><a href="#cb15-423" aria-hidden="true" tabindex="-1"></a>service_area <span class="ot">&lt;-</span> <span class="fu">st_union</span>(station_buffers)</span>
+<span id="cb15-424"><a href="#cb15-424" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-425"><a href="#cb15-425" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-426"><a href="#cb15-426" aria-hidden="true" tabindex="-1"></a><span class="fu">## 12. Distance Matrices and Nearest Features</span></span>
+<span id="cb15-427"><a href="#cb15-427" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-428"><a href="#cb15-428" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-429"><a href="#cb15-429" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">st_distance</span>(stations_pa, tracts_pa)</span>
+<span id="cb15-430"><a href="#cb15-430" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-431"><a href="#cb15-431" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-432"><a href="#cb15-432" aria-hidden="true" tabindex="-1"></a>st_distance(x, y) returns a matrix:</span>
+<span id="cb15-433"><a href="#cb15-433" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-434"><a href="#cb15-434" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Rows correspond to features in x.</span>
+<span id="cb15-435"><a href="#cb15-435" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Columns correspond to features in y.</span>
+<span id="cb15-436"><a href="#cb15-436" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Cell <span class="co">[</span><span class="ot">i, j</span><span class="co">]</span> is the distance between x feature i and y feature j.</span>
+<span id="cb15-437"><a href="#cb15-437" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Units follow the CRS and sf calculation method.</span>
+<span id="cb15-438"><a href="#cb15-438" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-439"><a href="#cb15-439" aria-hidden="true" tabindex="-1"></a>For many features, the full matrix can be large. If the question is only nearest station, use st_nearest_feature() and then calculate paired distances:</span>
+<span id="cb15-440"><a href="#cb15-440" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-441"><a href="#cb15-441" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb15-442"><a href="#cb15-442" aria-hidden="true" tabindex="-1"></a>tract_points <span class="ot">&lt;-</span> <span class="fu">st_point_on_surface</span>(tracts_pa)</span>
+<span id="cb15-443"><a href="#cb15-443" aria-hidden="true" tabindex="-1"></a>nearest_id <span class="ot">&lt;-</span> <span class="fu">st_nearest_feature</span>(tract_points, stations_pa)</span>
+<span id="cb15-444"><a href="#cb15-444" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-445"><a href="#cb15-445" aria-hidden="true" tabindex="-1"></a>tracts_pa <span class="ot">&lt;-</span> tracts_pa <span class="sc">|&gt;</span></span>
+<span id="cb15-446"><a href="#cb15-446" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb15-447"><a href="#cb15-447" aria-hidden="true" tabindex="-1"></a>    <span class="at">nearest_station =</span> stations_pa<span class="sc">$</span>station_id[nearest_id],</span>
+<span id="cb15-448"><a href="#cb15-448" aria-hidden="true" tabindex="-1"></a>    <span class="at">station_distance =</span> <span class="fu">st_distance</span>(</span>
+<span id="cb15-449"><a href="#cb15-449" aria-hidden="true" tabindex="-1"></a>      tract_points,</span>
+<span id="cb15-450"><a href="#cb15-450" aria-hidden="true" tabindex="-1"></a>      stations_pa[nearest_id, ],</span>
+<span id="cb15-451"><a href="#cb15-451" aria-hidden="true" tabindex="-1"></a>      <span class="at">by_element =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-452"><a href="#cb15-452" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb15-453"><a href="#cb15-453" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb15-454"><a href="#cb15-454" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-455"><a href="#cb15-455" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-456"><a href="#cb15-456" aria-hidden="true" tabindex="-1"></a><span class="fu">## 13. A Reliable Spatial-Analysis Checklist</span></span>
+<span id="cb15-457"><a href="#cb15-457" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-458"><a href="#cb15-458" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Inspect both the attributes and geometry types.</span>
+<span id="cb15-459"><a href="#cb15-459" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Confirm GEOID type, geography level, vintage, uniqueness, and missing values.</span>
+<span id="cb15-460"><a href="#cb15-460" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Inspect each layer with st_crs().</span>
+<span id="cb15-461"><a href="#cb15-461" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Use st_set_crs() only when the correct missing label is known.</span>
+<span id="cb15-462"><a href="#cb15-462" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Use st_transform() to put layers in the CRS appropriate to the analysis.</span>
+<span id="cb15-463"><a href="#cb15-463" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>Confirm the units before distances, areas, or buffers.</span>
+<span id="cb15-464"><a href="#cb15-464" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>Choose the spatial predicate that matches the policy question.</span>
+<span id="cb15-465"><a href="#cb15-465" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>Decide whether features should remain whole or be clipped.</span>
+<span id="cb15-466"><a href="#cb15-466" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>Check output row counts, duplicated matches, NA values, empty geometries, and validity.</span>
+<span id="cb15-467"><a href="#cb15-467" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>Map the result as a visual quality check.</span>
+<span id="cb15-468"><a href="#cb15-468" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-469"><a href="#cb15-469" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
+<span id="cb15-470"><a href="#cb15-470" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-471"><a href="#cb15-471" aria-hidden="true" tabindex="-1"></a>This week helped me understand that a map is not separate from a data table. In sf, every row contains both attributes and a spatial feature, and either a shared key or a spatial relationship can connect datasets. I also learned that CRS choice is part of the analysis: assigning the wrong CRS label, measuring in unknown units, or choosing a projection that distorts the property I care about can make a technically successful workflow produce a wrong answer.</span>
+<span id="cb15-472"><a href="#cb15-472" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-473"><a href="#cb15-473" aria-hidden="true" tabindex="-1"></a>The most important distinction for me is between selecting features and changing geometry. st_filter() keeps complete features that meet a condition, whereas st_intersection() creates the actual shared pieces. Before asking R to count tracts near a station, I must first define what near means.</span>
+<span id="cb15-474"><a href="#cb15-474" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-475"><a href="#cb15-475" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
+<span id="cb15-476"><a href="#cb15-476" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-477"><a href="#cb15-477" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>If tract boundaries change between two ACS releases, which crosswalk should I use before comparing the same neighborhood over time?</span>
+<span id="cb15-478"><a href="#cb15-478" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>For transit access, should a tract count when any part touches a buffer, when its representative point is inside, or when a certain share of residents is covered?</span>
+<span id="cb15-479"><a href="#cb15-479" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>How should I select an appropriate projected CRS when a study area crosses multiple UTM or State Plane zones?</span>
+<span id="cb15-480"><a href="#cb15-480" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>When a spatial join creates duplicate rows, what aggregation rule best matches the policy question?</span>
+</code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

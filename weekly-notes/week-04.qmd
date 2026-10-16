@@ -1,0 +1,464 @@
+---
+title: "Week 4: Spatial Data, Joins, CRS, and sf"
+description: "Joining Census tables and map geometries, choosing coordinate systems, and using sf for spatial relationships and analysis."
+date: 2026-09-18
+execute:
+  echo: false
+---
+
+## What We Did
+
+We connected ordinary Census tables to map geometries, compared attribute joins with spatial joins, and learned how the sf package stores spatial features in R. We then studied coordinate reference systems (CRSs), datums, projections, EPSG codes, UTM and State Plane systems, and the distortion tradeoffs involved in flattening the Earth onto a map.
+
+The second half of the class introduced spatial predicates and operations: testing whether features intersect, touch, or fall within one another; creating buffers; selecting nearby tracts; joining attributes by location; finding common areas; combining shapes; and calculating distances.
+
+## Key Concepts
+
+- A GEOID is a Census geography identifier. Store it as character text so leading zeros are not lost.
+- An attribute join matches rows using a shared key such as GEOID; a spatial join matches features using their locations and shapes.
+- An sf object is a data-frame-like table with a special geometry column and CRS metadata.
+- A CRS explains what coordinate numbers mean and where they locate features on Earth.
+- st_set_crs() assigns or repairs a CRS label; st_transform() actually recalculates coordinates in another CRS.
+- Geographic CRSs normally use longitude and latitude in degrees. Projected CRSs use flat x/y coordinates, commonly in meters or feet.
+- Every flat projection distorts something. Choose a projection according to the task: shape, area, distance, or direction.
+- Spatial predicates answer yes/no relationship questions. Spatial transformations such as buffers, intersections, and unions create new geometry.
+
+## 1. Attribute Joins: Matching Tables by GEOID
+
+Suppose the two income tables are:
+
+| GEOID | med_inc_23 |
+| --- | ---: |
+| 100 | 82,000 |
+| 200 | 31,500 |
+| 300 | 45,000 |
+
+| GEOID | med_inc_15 |
+| --- | ---: |
+| 100 | 61,000 |
+| 200 | 27,000 |
+| 400 | 39,000 |
+
+A valid join key must have the same meaning and compatible formatting in both tables. It is not enough for both columns to be named GEOID: both must represent the same geographic level and vintage, and values such as leading zeros must be preserved.
+
+```{mermaid}
+flowchart LR
+    A[2023 table<br/>100, 200, 300] --> J{Join by GEOID}
+    B[2015 table<br/>100, 200, 400] --> J
+    J --> L[left_join<br/>100, 200, 300]
+    J --> I[inner_join<br/>100, 200]
+    J --> F[full_join<br/>100, 200, 300, 400]
+```
+
+### left_join()
+
+```r
+income_joined <- left_join(income_23, income_15, by = "GEOID")
+```
+
+Because income_23 is on the left, every 2023 row remains:
+
+| GEOID | med_inc_23 | med_inc_15 |
+| --- | ---: | ---: |
+| 100 | 82,000 | 61,000 |
+| 200 | 31,500 | 27,000 |
+| 300 | 45,000 | NA |
+
+GEOID 400 does not appear in this result because it exists only in the right-hand table. The original note incorrectly included 400 in the left_join() result; including all four GEOIDs would be a full_join().
+
+### Join types
+
+| Join | Rows retained |
+| --- | --- |
+| left_join(x, y) | All keys from x; unmatched y values become NA |
+| inner_join(x, y) | Only keys appearing in both x and y |
+| full_join(x, y) | Every key appearing in either table |
+| anti_join(x, y) | Rows in x with no match in y; useful for diagnosing failed matches |
+
+Always check a join rather than assuming it worked:
+
+```r
+income_joined |>
+  summarize(
+    rows = n(),
+    missing_2015 = sum(is.na(med_inc_15))
+  )
+
+anti_join(income_23, income_15, by = "GEOID")
+```
+
+Matching GEOIDs alone may still be misleading across years if Census boundaries changed. For time comparisons, confirm that the geographic vintage is consistent or use an appropriate crosswalk.
+
+## 2. sf: Attributes and Geometry in One Table
+
+sf means simple features. An sf object behaves like a data frame but also contains:
+
+1. Ordinary attribute columns such as GEOID, population, or income.
+2. A geometry column containing POINT, LINESTRING, POLYGON, or multipart geometries.
+3. CRS metadata describing the coordinate system.
+
+| GEOID | med_inc_23 | geometry |
+| --- | ---: | --- |
+| 42101000100 | 82,000 | POLYGON (...) |
+| 42101000200 | 31,500 | POLYGON (...) |
+
+The geometry column is often described as sticky: when an sf object is the left table in a normal dplyr operation, its geometry usually remains attached.
+
+```r
+library(sf)
+library(dplyr)
+library(tidycensus)
+
+tracts <- get_acs(
+  geography = "tract",
+  variables = c(median_income = "B19013_001"),
+  state = "PA",
+  county = "Philadelphia",
+  year = 2023,
+  survey = "acs5",
+  geometry = TRUE
+)
+
+class(tracts)
+st_geometry_type(tracts)
+st_crs(tracts)
+```
+
+For an attribute join, normally join a plain table onto the sf layer:
+
+```r
+tracts_with_data <- left_join(tracts, income_table, by = "GEOID")
+```
+
+If both inputs are sf objects but the match is based on a key rather than location, drop geometry from the right table first:
+
+```r
+joined <- left_join(spatial_x, st_drop_geometry(spatial_y), by = "GEOID")
+```
+
+### Common spatial formats
+
+- A shapefile is not only one .shp file. It normally includes .shp geometry, .shx index, .dbf attributes, and .prj CRS information. Keep the companion files together.
+- A file geodatabase has a .gdb extension and is usually a folder containing multiple layers.
+- GeoPackage (.gpkg) is a modern single-file container that can hold several vector layers.
+- st_read() or read_sf() reads supported vector layers into sf.
+
+## 3. What a CRS Does
+
+A CRS answers four questions:
+
+1. What model of Earth is being used?
+2. Where is that model anchored relative to Earth?
+3. How are locations represented as coordinates?
+4. What units and axis conventions do those coordinates use?
+
+```{mermaid}
+flowchart LR
+    E[Real Earth] --> D[Datum and ellipsoid<br/>model and anchor]
+    D --> G[Geographic CRS<br/>longitude and latitude]
+    G --> P[Map projection]
+    P --> C[Projected CRS<br/>x and y in linear units]
+```
+
+### Geographic CRS
+
+- Represents longitude and latitude on an ellipsoid.
+- Coordinate values are angular, normally degrees.
+- Useful for data exchange, GPS, and global reference.
+- A degree is not a fixed ground distance: one degree of longitude becomes shorter toward the poles.
+
+### Projected CRS
+
+- Converts locations to a flat x/y grid.
+- Units are usually meters or feet.
+- Designed for a particular region and purpose.
+- Often preferable for local buffers, Euclidean distances, and areas because the units are explicit and distortion can be controlled locally.
+
+Modern sf can perform geodesic calculations on longitude/latitude data, but for a local policy analysis it is still important to choose and document an appropriate projected CRS before interpreting feet, meters, areas, or buffer radii.
+
+## 4. Ellipsoids and Datums
+
+An ellipsoid approximates Earth's shape. A datum connects that model to the real Earth and supplies a reference frame. GRS 80 is an ellipsoid; NAD 83 is a datum/reference system built on it.
+
+| Reference | Main idea |
+| --- | --- |
+| NAD 27 | North American Datum of 1927; based on the Clarke 1866 ellipsoid and anchored at Meades Ranch, Kansas |
+| NAD 83 | North American Datum of 1983; based on GRS 80 and designed as an Earth-centered reference system |
+| WGS 84 | Global Earth-centered reference system used by GPS and much worldwide data |
+
+Coordinates for the same physical place can differ between datums. A CRS label is therefore essential; longitude and latitude numbers without a datum are incomplete information.
+
+## 5. Flattening Earth: Projection Families and Distortion
+
+A globe cannot be flattened without stretching, tearing, or compressing it. A map projection chooses where and how distortion occurs.
+
+```{mermaid}
+flowchart TD
+    E[Curved Earth] --> CY[Cylindrical]
+    E --> CO[Conic]
+    E --> AZ[Planar or azimuthal]
+    CY --> TM[Transverse Mercator<br/>used by UTM]
+    CO --> LCC[Lambert conformal conic<br/>common in State Plane]
+    CO --> AEA[Albers equal area<br/>regional area analysis]
+    AZ --> LOCAL[Directions or distances<br/>from a selected center]
+```
+
+- Cylindrical: imagine wrapping a cylinder around Earth. A transverse cylinder is turned sideways so its line of best fit follows a meridian.
+- Conic: imagine placing a cone over Earth. It works well for mid-latitude regions that extend east–west.
+- Planar or azimuthal: project onto a plane touching at a point; often useful around a chosen center.
+- Tangent projections touch at one line or point; secant projections cut through and create two standard lines. Distortion is lowest along the standard line(s) or point and generally increases away from them.
+
+### What can a projection preserve?
+
+| Property | What it preserves | What it does not guarantee |
+| --- | --- | --- |
+| Conformal | Local angles and small shapes | Correct area or distance everywhere |
+| Equal-area | Relative area | Local shape and all distances |
+| Equidistant | Selected distances from particular lines or points | Every distance between every pair of locations |
+| True-direction / azimuthal | Directions from a selected center | Shape, area, and distance everywhere |
+
+No flat map preserves shape, area, distance, and direction everywhere at the same time. The correct projection depends on the research question.
+
+## 6. EPSG Codes Used in Class
+
+An EPSG code is a compact identifier for a particular CRS definition. The code is not a quality ranking; it simply points to a documented coordinate system.
+
+| EPSG | CRS | Type | Typical units / use |
+| ---: | --- | --- | --- |
+| 4326 | WGS 84 | Geographic | Degrees; GPS and global exchange |
+| 4269 | NAD 83 | Geographic | Degrees; North American data |
+| 2272 | NAD83 / Pennsylvania South (ftUS) | Projected State Plane | US survey feet; southern Pennsylvania local analysis |
+| 5070 | NAD83 / Conus Albers | Projected equal-area | Meters; area comparisons across the conterminous US |
+
+Check the CRS instead of guessing from the coordinate values:
+
+```r
+st_crs(tracts)
+st_crs(tracts)$epsg
+st_crs(tracts)$units_gdal
+```
+
+## 7. st_set_crs() Is Not st_transform()
+
+This distinction is essential:
+
+```{mermaid}
+flowchart LR
+    A[Coordinates have no label<br/>but true CRS is known] -->|st_set_crs 2272| B[Same coordinate numbers<br/>correct CRS metadata added]
+    B -->|st_transform 4326| C[New coordinate numbers<br/>same real-world locations]
+```
+
+### st_set_crs()
+
+Use only when coordinates already belong to a known CRS but the CRS metadata is missing or incorrect.
+
+```r
+roads <- st_set_crs(roads, 2272)
+```
+
+This changes the label, not the coordinate numbers and not the locations. Assigning the wrong label makes the data incorrect.
+
+### st_transform()
+
+Use when the layer already has the correct source CRS and you want a new CRS.
+
+```r
+roads_wgs84 <- st_transform(roads, 4326)
+```
+
+This recalculates all coordinate numbers while preserving the same real-world locations. Before combining spatial layers, make their CRSs compatible:
+
+```r
+st_crs(stations) == st_crs(tracts)
+stations <- st_transform(stations, st_crs(tracts))
+```
+
+## 8. UTM and State Plane Systems
+
+### UTM
+
+The Universal Transverse Mercator system divides the world into 60 longitudinal zones, each approximately 6 degrees wide. Each zone uses its own transverse Mercator projection and meter coordinates.
+
+```{mermaid}
+flowchart LR
+    W[World longitude] --> Z1[Zone 1<br/>6 degrees]
+    W --> Z2[Zone 2<br/>6 degrees]
+    W --> DOT[...]
+    W --> Z18[Zone 18N<br/>Philadelphia region]
+    W --> Z60[Zone 60<br/>6 degrees]
+```
+
+A central meridian runs through each zone. UTM assigns a false easting of 500,000 meters at that meridian so ordinary zone coordinates avoid negative eastings. Southern-hemisphere zones also use a false northing. A coordinate such as x = 500,000 and y = 4,400,000 has meaning only together with its UTM zone and hemisphere.
+
+### State Plane
+
+The State Plane Coordinate System divides US states into one or more zones designed for accurate local work. Pennsylvania has North and South zones. EPSG:2272 is the NAD83 Pennsylvania South definition in US survey feet. Do not assume that every State Plane layer uses feet: definitions may use meters or feet, so inspect the exact EPSG record.
+
+## 9. Spatial Predicates: What Relationship Do the Shapes Have?
+
+Imagine polygon A next to B, while smaller polygon C lies inside A:
+
+```{mermaid}
+flowchart LR
+    A[Polygon A] ---|touches boundary| B[Polygon B]
+    C[Polygon C] -->|within| A
+    A -->|contains| C
+```
+
+| Predicate | Question | A–B | A–C | C–A | A–A |
+| --- | --- | :---: | :---: | :---: | :---: |
+| st_intersects() | Do the features share any point? | TRUE | TRUE | TRUE | TRUE |
+| st_touches() | Do boundaries meet while interiors do not overlap? | TRUE | FALSE | FALSE | FALSE |
+| st_within() | Is the first feature inside the second? | FALSE | FALSE | TRUE | TRUE |
+
+Important details:
+
+- st_intersects() is broad: touching, overlapping, containment, and equality can all count as intersection.
+- st_touches() is usually better for finding neighboring polygons because a feature does not touch itself.
+- st_within(x, y) has an order: it asks whether x is within y.
+- Spatial predicates normally return sparse relationship lists or logical relationships; they do not automatically create clipped shapes.
+
+## 10. Selecting, Joining, and Changing Geometry
+
+These functions answer different questions:
+
+| Function | Main result | Does geometry change? |
+| --- | --- | --- |
+| st_filter(x, y) | Rows of x satisfying a spatial predicate with y | No; selected x geometries remain whole |
+| st_join(x, y) | x features plus matching attributes from y | Normally keeps x geometry |
+| st_intersection(x, y) | Shared pieces of x and y | Yes; features may be clipped or split |
+| st_union(x) | Combined geometry | Yes; boundaries may dissolve |
+| st_buffer(x, dist) | Zones at a specified distance around x | Yes; creates new polygons |
+| st_distance(x, y) | Pairwise distance matrix | No |
+
+```{mermaid}
+flowchart TD
+    Q[Which tracts are near a station?] --> F[st_filter<br/>keep whole matching tracts]
+    Q --> J[st_join<br/>attach station or tract attributes]
+    Q --> X[st_intersection<br/>create only overlapping pieces]
+    Q --> U[st_union<br/>merge all service zones]
+```
+
+### Why st_filter() and st_intersection() are not interchangeable
+
+If a half-mile station buffer touches only a corner of a tract:
+
+- st_filter(tracts, buffer) returns the complete tract.
+- st_intersection(tracts, buffer) returns only the portion inside the buffer.
+
+Choose based on the research question. Counting every tract with any overlap is not the same as measuring how much tract area or population lies within the service zone.
+
+### Spatial joins
+
+```r
+stations_with_tract <- st_join(
+  stations,
+  tracts,
+  join = st_within
+)
+```
+
+This keeps station geometry and adds attributes of the tract containing each station. If one x feature matches multiple y features, st_join() can produce multiple output rows, so check the row count.
+
+## 11. Half-Mile Station Access Example
+
+Research question: How many Census tracts are near a transit station?
+
+```{mermaid}
+flowchart LR
+    S[Stations] --> C[Transform to local projected CRS]
+    T[Census tracts] --> C
+    C --> B[Create half-mile station buffers]
+    B --> F[Filter or intersect tracts]
+    F --> N[Count, summarize, and map]
+```
+
+```r
+library(sf)
+library(dplyr)
+library(units)
+
+# Both layers must use the same suitable projected CRS
+stations_pa <- st_transform(stations, 2272)
+tracts_pa <- st_transform(tracts, 2272)
+
+half_mile <- set_units(0.5, mi)
+station_buffers <- st_buffer(stations_pa, dist = half_mile)
+
+# Criterion: any part of the tract intersects any buffer
+near_tracts <- st_filter(
+  tracts_pa,
+  station_buffers,
+  .predicate = st_intersects
+)
+
+nrow(near_tracts)
+```
+
+The result depends on the definition of near:
+
+- Any-overlap rule: a tract counts when any part intersects the buffer. This can count a large tract touched only at one corner.
+- Representative-point rule: test a centroid or st_point_on_surface() against the buffer. This is simpler but does not describe where residents actually live.
+- Area or population share rule: intersect the tract with the buffer and calculate the portion covered. This is more informative but requires stronger assumptions and more work.
+
+To merge overlapping station buffers into one service area:
+
+```r
+service_area <- st_union(station_buffers)
+```
+
+## 12. Distance Matrices and Nearest Features
+
+```r
+d <- st_distance(stations_pa, tracts_pa)
+```
+
+st_distance(x, y) returns a matrix:
+
+- Rows correspond to features in x.
+- Columns correspond to features in y.
+- Cell [i, j] is the distance between x feature i and y feature j.
+- Units follow the CRS and sf calculation method.
+
+For many features, the full matrix can be large. If the question is only nearest station, use st_nearest_feature() and then calculate paired distances:
+
+```r
+tract_points <- st_point_on_surface(tracts_pa)
+nearest_id <- st_nearest_feature(tract_points, stations_pa)
+
+tracts_pa <- tracts_pa |>
+  mutate(
+    nearest_station = stations_pa$station_id[nearest_id],
+    station_distance = st_distance(
+      tract_points,
+      stations_pa[nearest_id, ],
+      by_element = TRUE
+    )
+  )
+```
+
+## 13. A Reliable Spatial-Analysis Checklist
+
+1. Inspect both the attributes and geometry types.
+2. Confirm GEOID type, geography level, vintage, uniqueness, and missing values.
+3. Inspect each layer with st_crs().
+4. Use st_set_crs() only when the correct missing label is known.
+5. Use st_transform() to put layers in the CRS appropriate to the analysis.
+6. Confirm the units before distances, areas, or buffers.
+7. Choose the spatial predicate that matches the policy question.
+8. Decide whether features should remain whole or be clipped.
+9. Check output row counts, duplicated matches, NA values, empty geometries, and validity.
+10. Map the result as a visual quality check.
+
+## Reflection
+
+This week helped me understand that a map is not separate from a data table. In sf, every row contains both attributes and a spatial feature, and either a shared key or a spatial relationship can connect datasets. I also learned that CRS choice is part of the analysis: assigning the wrong CRS label, measuring in unknown units, or choosing a projection that distorts the property I care about can make a technically successful workflow produce a wrong answer.
+
+The most important distinction for me is between selecting features and changing geometry. st_filter() keeps complete features that meet a condition, whereas st_intersection() creates the actual shared pieces. Before asking R to count tracts near a station, I must first define what near means.
+
+## Questions I Still Have
+
+- If tract boundaries change between two ACS releases, which crosswalk should I use before comparing the same neighborhood over time?
+- For transit access, should a tract count when any part touches a buffer, when its representative point is inside, or when a certain share of residents is covered?
+- How should I select an appropriate projected CRS when a study area crosses multiple UTM or State Plane zones?
+- When a spatial join creates duplicate rows, what aggregation rule best matches the policy question?
