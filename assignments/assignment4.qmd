@@ -3,7 +3,7 @@ title: "Assignment 4: Building Features, Watching What Happens"
 subtitle: "Predicting households without a vehicle in Philadelphia"
 author: "Oscar Luo"
 date: "2026-10-05"
-date-modified: "2026-10-14"
+date-modified: "2026-10-16"
 description: "ACS reliability, spatial features, and cross-validated predictions of tract-level vehicle availability."
 format:
   html:
@@ -19,10 +19,6 @@ freeze: false
 ---
 
 ## Part 0: Setup
-
-**The question:** Can neighborhood context improve predictions of the percentage of Philadelphia households without a vehicle, beyond household income, tenure, education, and household size? This is a prediction problem: a transportation agency could use expected vehicle availability to identify places for further investigation of transit and pedestrian needs. A high no-vehicle share does not by itself distinguish voluntary car-free living from constrained access.
-
-I follow the Week 3 reliability checks, Week 4 spatial operations, and Week 5 regression and cross-validation workflow. All outcomes and ACS predictors describe **2019–2023**, and both open-data layers contain only **2023** records. This is a retrospective tract-level prediction exercise, not a forecast made before 2023.
 
 ```{r}
 #| label: setup
@@ -44,8 +40,6 @@ Sys.getenv("CENSUS_API_KEY") != ""  # Read the key without displaying it.
 ```
 
 ### Cross-validation and model log
-
-The supplied helper returns the **mean of the ten fold RMSEs**, in percentage points. I retain its calculation and, after the one-time tract filter, explicitly save the training indices so every model uses exactly the same folds.
 
 ```{r}
 #| label: cv-helper
@@ -74,17 +68,17 @@ model_log <- tibble(
 
 ### 1A: Pull the outcome and baseline predictors
 
-My outcome is `B08201_002 / B08201_001 * 100`: households with **no vehicle available**, divided by all households. The definitions come from the [2023 ACS B08201 variable dictionary](https://api.census.gov/data/2023/acs/acs5/groups/B08201.html).
+The outcome is the percentage of households without a vehicle, using the [2023 ACS B08201 definitions](https://api.census.gov/data/2023/acs/acs5/groups/B08201.html).
 
 | Variable | ACS source | Reason for including it |
 |---|---|---|
-| No-vehicle household share, `y` | B08201_002 / B08201_001 | Transportation access outcome |
+| No-vehicle household share, `y` | B08201_002 / B08201_001 × 100 | Transportation access outcome |
 | Income per $10,000, `income_10k` | B19013_001 / 10,000 | Resources available for vehicle ownership |
 | Renter share, `pct_renter` | B25003_003 / B25003_001 × 100 | Tenure and housing-market context |
 | Bachelor's degree or higher, `pct_ba` | Sum of B15003_022–025 / B15003_001 × 100 | Education and socioeconomic composition |
 | Average household size, `hh_size` | B25010_001 | Household transportation needs and shared resources |
 
-None of the four predictors contains the number of no-vehicle households, vehicle ownership categories, or a rearrangement of the outcome. Sharing a general household population does not make tenure or household size an algebraic version of vehicle availability.
+None of the four predictors is derived from vehicle availability.
 
 ```{r}
 #| label: pull
@@ -146,7 +140,7 @@ philly_tracts <- philly_tracts %>%
 
 ### 1B: Is the outcome reliable enough?
 
-The numerator is a subset of the denominator, so I use [`moe_prop()`](https://walker-data.com/tidycensus/reference/moe_prop.html) for the 90% margin of error. Multiplication by 100 expresses both the estimate and MOE in percentage points. Following the previous assignment, CV below 12% is High reliability, 12–40% is Moderate, and above 40% is Low. A zero estimate has undefined relative CV; I report it separately rather than treating it as precise.
+I use `moe_prop()` for the 90% margin of error. Reliability is High for CV < 12%, Moderate for 12–40%, and Low above 40%; zero estimates have undefined CV.
 
 ```{r}
 #| label: reliability
@@ -167,7 +161,7 @@ ggplot(philly_tracts, aes(x = y)) +
        caption = "Source: 2019–2023 ACS. Twenty tracts have no defined outcome.")
 ```
 
-**Answer:** The outcome is the percentage of households without a vehicle, which matters for transit access and pedestrian planning. Of 408 tracts, 20 have no defined outcome; among the remaining 388, 29 have High reliability, 313 Moderate, 45 Low, and one an undefined CV because its estimate is zero. The Low share is about 11.6% of tracts with an outcome, below the one-third warning threshold, so I proceed while retaining the uncertainty measures.
+No-vehicle household share informs transit and pedestrian planning. Of 408 tracts, 20 lack an outcome; the remaining 388 include 29 High-reliability, 313 Moderate, 45 Low, and one with undefined CV. Only 11.6% have Low reliability, below the one-third threshold, so I proceed.
 
 ### 1C: Decide which tracts to model
 
@@ -204,7 +198,7 @@ ctrl <- trainControl(method = "cv", number = 10, index = folds,
 stopifnot(!anyDuplicated(model_geoids), all(is.finite(tracts$y_cv)))
 ```
 
-**Answer:** The one-time filter removes **27 tracts**, leaving **381**. Seventeen excluded tracts have no residents, three have residents but no households, and seven have households but no median-income estimate. The first two groups are consistent with nonresidential or group-quarters areas; the seven income-missing tracts include substantial residential populations, so the sample does not represent every inhabited tract. I do not remove low-reliability tracts merely for having high CV, and I do not drop any further model rows.
+Filtering removes **27 tracts**, leaving **381**: 17 have no residents, three have residents but no households, and seven lack median income. These include nonresidential or group-quarters areas and some inhabited tracts with missing data. Low-reliability tracts remain; no rows are dropped later.
 
 ## Part 2: Baseline model
 
@@ -232,7 +226,7 @@ tracts %>% st_drop_geometry() %>%
        x = NULL, y = "Households without a vehicle (%)")
 ```
 
-Renter share has the clearest positive association. Income and household size generally slope downward, while education has little overall linear association and a wide spread at both ends. The income scatter suggests that the decline may flatten, but the first model keeps all four predictors linear as a baseline.
+Renter share is positively associated with the outcome; income and household size generally slope downward. Education has little overall linear association.
 
 ### 2B: Fit and log
 
@@ -248,7 +242,7 @@ model_log <- model_log %>%
 model_log
 ```
 
-On tracts it has not seen, the baseline model misses by about **`r sprintf('%.2f', model_log$cv_rmse[1])` percentage points**, measured by mean ten-fold RMSE. This is an error in a percentage, not a percentage change in the outcome.
+On tracts it has not seen, the baseline model misses by about **`r sprintf('%.2f', model_log$cv_rmse[1])` percentage points**, measured by mean ten-fold RMSE.
 
 ### 2C: Where is the baseline wrong?
 
@@ -273,11 +267,11 @@ ggplot(tracts) +
        caption = "In-sample residuals. Gaps are excluded tracts; north is up.")
 ```
 
-**Answer:** Positive residuals cluster around Center City and parts of North and West Philadelphia; negative residuals are common in Northeast Philadelphia and parts of the northwest. For example, tract 4.03 near City Hall is underpredicted by 43.28 points, while tract 345.01 in the northeast is overpredicted by 36.49 points. This pattern suggests missing geographic context: centrality, street activity, and conditions faced by people walking to transit. It motivates testing robbery incidents and dangerous-sidewalk requests as imperfect neighborhood proxies, plus distance to City Hall; the map alone cannot establish their mechanisms.
+Underprediction clusters around Center City and parts of North and West Philadelphia; overprediction is common in the Northeast and northwest. Missing centrality, street activity, and pedestrian conditions motivate testing City Hall distance, robbery incidents, and dangerous-sidewalk requests.
 
 ## Part 3: Philadelphia open data
 
-I use the city's [Crime Incidents](https://opendataphilly.org/datasets/crime-incidents/) and [311 Service and Information Requests](https://opendataphilly.org/datasets/311-service-and-information-requests/) datasets. Both are queried through the Carto SQL API, with dates and categories filtered **on the server**. The saved responses were retrieved on October 5, 2026, but contain only events or requests dated in 2023. They are current historical extracts, not guaranteed snapshots of exactly what the agency knew in December 2023.
+I query [Crime Incidents](https://opendataphilly.org/datasets/crime-incidents/) and [311 requests](https://opendataphilly.org/datasets/311-service-and-information-requests/) through Carto, filtering dates and categories in SQL. Retrieved October 5, 2026, these are historical 2023 records, so the analysis is retrospective.
 
 ### Pull two layers
 
@@ -338,13 +332,13 @@ geometry_audit %>% knitr::kable()
 stopifnot(all(robbery_matches <= 1), all(sidewalk_matches <= 1))
 ```
 
-There are **5,258 robbery records**, of which **204 (3.9%)** have empty geometry and cannot be counted spatially. All **3,202 sidewalk requests** have geometry. Three located robbery records and one sidewalk request intersect no Philadelphia tract; none intersects multiple tracts, so boundary double counting is absent. Counts below include only points intersecting a modeled tract. Nearest distance uses all located sidewalk requests, including the one outside the city boundary, although it is not the nearest point for any modeled tract.
+Missing geometry excludes **204 of 5,258 robbery records (3.9%)** and no sidewalk requests. Three robberies and one sidewalk request fall outside city tracts; none matches multiple tracts. The outside sidewalk request is not nearest to any modeled tract.
 
-**Answer:** Robbery records may capture street activity and neighborhood safety conditions that income and tenure miss. Dangerous-sidewalk requests may capture pedestrian-environment problems relevant to households relying on walking and transit. Both are reported events, not complete measurements of safety or sidewalk quality: reporting behavior, agency recording practices, and repeated requests can shape the patterns. I therefore test their predictive contribution without assuming a causal direction or treating residents as inherently risky.
+Robbery records may capture street activity and safety conditions; dangerous-sidewalk requests may capture pedestrian-environment problems beyond the ACS variables. Both depend on reporting and recording practices, so their predictive value does not establish causation.
 
 ## Part 4: Building spatial features
 
-All geometries use **EPSG 2272**, whose units are US survey feet. Counts preserve zeros, density uses square miles, and distances use miles. Each fitted candidate is added to the model log immediately.
+Geometry uses **EPSG 2272** (US survey feet); densities use square miles and distances use miles.
 
 ### 4A: Count robbery incidents
 
@@ -360,7 +354,7 @@ model_log <- model_log %>%
 
 ### 4B: Normalize counts
 
-I replace the raw robbery count with robbery density, rather than including two representations of the same count at once. Area density measures concentration of recorded incidents, not the probability that a resident experiences robbery.
+Area density replaces the raw count to measure incident concentration.
 
 ```{r}
 #| label: density
@@ -388,7 +382,7 @@ model_log <- model_log %>%
           cv_rmse = cv_rmse(f4, tracts), notes = "Pedestrian-environment proxy")
 ```
 
-The largest robbery rate is 33.46 per 1,000 residents in tract 4.03, with 35 incidents and 1,046 residents. It is not a rate driven by only a few dozen residents, but a central tract can attract visitors and workers who are absent from the residential denominator. This is another reason to prefer area density here; small-area densities can still be extreme and require inspection.
+The highest per-capita rate is 33.46 per 1,000 residents in tract 4.03 (35 incidents; 1,046 residents). Visitors and workers are absent from the residential denominator, supporting area density as the predictor.
 
 ### 4C: Distance to the nearest sidewalk request
 
@@ -406,7 +400,7 @@ model_log <- model_log %>%
           cv_rmse = cv_rmse(f5, tracts), notes = "Straight-line distance from interior point")
 ```
 
-A point on the tract surface is guaranteed to be inside its tract. This distance describes proximity to a **reported problem**, not access to a safe sidewalk, and does not represent every household's walking route.
+This measures straight-line proximity to a reported sidewalk problem from an interior tract point.
 
 ### 4D: Distance to City Hall
 
@@ -423,11 +417,11 @@ model_log %>% knitr::kable(digits = 3)
 
 ### 4E: What helped?
 
-**Answer:** Adding robbery density to the ACS baseline lowers CV RMSE from 12.33 to 10.86 points, a **1.47-point** improvement. Relative to the raw-count model, the density model improves RMSE by 0.90 points. Among the successive changes in the log, City Hall distance produces the largest single decrease, **1.07 points** from `m5` to `m6`. Sidewalk density and nearest-request distance lower RMSE by only 0.11 and 0.06 points initially, much less than I expected: reporting intensity and overlap with general centrality may limit their additional information.
+Robbery density improves on the ACS baseline by **1.47 points** (12.33 → 10.86). Among successive additions, City Hall distance produces the largest decrease: **1.07 points** (`m5` → `m6`). Sidewalk density and nearest-request distance disappoint, improving RMSE by only 0.11 and 0.06 points; reporting patterns and overlap with centrality may limit their contribution.
 
 ## Part 5: Transforming features
 
-The outcome remains an untransformed percentage throughout. Following the [October 9 Week 6 lecture](https://canvas.upenn.edu/courses/1944265/files/167716622), I inspect the distributions and relationships before transforming predictors, keep the same rows and folds, and compare models by CV RMSE. The required transformations are a log, a squared term, and a categorical variable. Interactions and district fixed effects are additional tools discussed in the lecture, rather than additional requirements in its Part 5 checklist.
+The outcome stays untransformed; all comparisons use the same rows and folds.
 
 ### 5A: A log for skewed robbery density
 
@@ -453,9 +447,9 @@ model_log <- model_log %>%
           cv_rmse = cv_rmse(f7, tracts), notes = "Compress the right tail; retain zeros")
 ```
 
-The raw density distribution has a long right tail, making a log a reasonable candidate. Nevertheless, `log1p()` **increases** RMSE from 9.62 to 9.82 points. A less skewed predictor does not guarantee better predictions.
+The long right tail motivates `log1p()`, but RMSE rises from 9.62 to 9.82 points.
 
-For `m7`, the logged-density coefficient is **`r sprintf("%.3f", log_beta)`**. Holding the other variables constant, changing density from $x$ to $x_{new}$ changes predicted no-vehicle share by $\hat\beta[\log(1+x_{new})-\log(1+x)]$ percentage points. For example, a 10% increase from 10 to 11 robberies per square mile corresponds to **`r sprintf("%.3f", log_beta * (log1p(11) - log1p(10)))` points**. The familiar $\hat\beta/100$ rule for a 1% increase is only an approximation for `log1p(x)` and works poorly near zero.
+In `m7`, holding other predictors constant, increasing robbery density from 10 to 11 per square mile changes predicted no-vehicle share by **`r sprintf("%.3f", log_beta * (log1p(11) - log1p(10)))` percentage points**, using $\hat\beta[\log(12)-\log(11)]$.
 
 ### 5B: A squared term for centrality
 
@@ -486,11 +480,11 @@ model_log <- model_log %>%
           cv_rmse = cv_rmse(f8, tracts), notes = "Allow the distance gradient to bend")
 ```
 
-The flexible smooth departs from a constant downward slope, motivating a quadratic candidate. Adding the squared term lowers RMSE to **9.34 points**, 0.28 points below the corresponding linear-distance model. Its conditional distance association is $\hat\beta_1 + 2\hat\beta_2 d$, not either coefficient alone: the negative linear term and positive squared term imply a decline followed by a rise. In `m8`, the turning point is **`r sprintf("%.2f", turn_m8)` miles**; I check the selected model's turning point, observed range, and support near the edge in Part 6. The unadjusted smooth above and a multivariable model's conditional curve need not have the same shape.
+The curved smooth motivates a squared term, which lowers RMSE from 9.62 to **9.34 points**. The conditional slope is $\hat\beta_1 + 2\hat\beta_2 d$: the negative linear and positive squared coefficients imply a decline followed by a rise.
 
 ### 5C: Categorical distance rings
 
-The central-versus-outer pattern also motivates testing interpretable distance bands. I use the assignment's fixed cutoffs of two and five miles, without choosing thresholds to minimize RMSE.
+The central–outer pattern motivates distance bands, using the template's two- and five-mile cutoffs.
 
 ```{r}
 #| label: categorical
@@ -520,7 +514,7 @@ model_log <- model_log %>%
           cv_rmse = cv_rmse(f9, tracts), notes = "Core is the reference category")
 ```
 
-The Core, Inner, and Outer groups contain **79, 134, and 168 tracts**, respectively, and all three levels occur in every training fold. R encodes this three-level factor using two dummy variables, leaving Core as the reference. Holding the other predictors constant, an Outer tract has a predicted no-vehicle share **`r sprintf('%.2f', abs(coef(m_cat)['ringOuter']))` percentage points lower than a Core tract**, the reference category. Grouping raises RMSE to 9.81 points, suggesting that the bands discard useful within-ring variation.
+Core, Inner, and Outer contain **79, 134, and 168 tracts**, respectively; every training fold contains all three levels. RMSE rises to 9.81 points, suggesting that the bands lose useful within-ring variation.
 
 ### 5D: Combine and compare
 
@@ -533,13 +527,13 @@ model_log <- model_log %>%
 model_log %>% knitr::kable(digits = 3)
 ```
 
-**Answer:** The squared-distance term helps most. Combining it with logged robbery density gives 9.48 points, still worse than keeping raw density with the quadratic at 9.34. I retain the quadratic and raw density; I do not choose transformations by significance or by how attractive their histograms look.
+Squared distance helps most. Combining it with logged robbery density gives 9.48 points, versus 9.34 with raw density, so I retain the quadratic and raw density. In the categorical model, holding other predictors constant, an Outer tract has a predicted no-vehicle share **`r sprintf('%.2f', abs(coef(m_cat)['ringOuter']))` percentage points lower than Core**, the reference category.
 
 ## Part 6: Final model
 
 ### Choose a parsimonious combination
 
-The sidewalk additions were weak, so I also check whether they still help after centrality has been modeled flexibly. These comparisons use the same tracts and folds as every previous candidate.
+I test whether the sidewalk features still help after adding squared distance.
 
 ```{r}
 #| label: final
@@ -569,7 +563,7 @@ model_log %>%
              subtitle = "Mean RMSE across the same ten folds; lower is better")
 ```
 
-Removing nearest-request distance alone changes RMSE from 9.3399 to 9.3441, a negligible worsening; removing both sidewalk terms gives **`r sprintf('%.2f', tail(model_log$cv_rmse, 1))` points**. This is **`r sprintf('%.2f', model_log$cv_rmse[1] - tail(model_log$cv_rmse, 1))` points**, or **`r sprintf('%.1f', 100 * (1 - tail(model_log$cv_rmse, 1) / model_log$cv_rmse[1]))`%**, below baseline. The 0.02-point advantage over `m8` is too small to claim a decisive performance difference; the simpler model is attractive because it performs at least comparably with fewer terms.
+Removing both sidewalk terms gives **`r sprintf('%.2f', tail(model_log$cv_rmse, 1))` points**, improving on baseline by **`r sprintf('%.2f', model_log$cv_rmse[1] - tail(model_log$cv_rmse, 1))` points (`r sprintf('%.1f', 100 * (1 - tail(model_log$cv_rmse, 1) / model_log$cv_rmse[1]))`%)**. Its 0.02-point advantage over `m8` is negligible; I select it for comparable performance with fewer terms.
 
 ```{r}
 #| label: model-comparison-plot
@@ -584,7 +578,7 @@ model_log %>% filter(model != "final") %>%
        x = "Mean ten-fold RMSE (percentage points)", y = NULL)
 ```
 
-### Read the final distance curve and check its range
+### Final distance curve
 
 ```{r}
 #| label: final-distance-curve
@@ -617,7 +611,7 @@ ggplot(distance_curve, aes(x = d, y = change_pp)) +
        caption = "Only distance varies. The curve is restricted to the observed distance range.")
 ```
 
-The final model's turning point is **`r sprintf("%.2f", turn_final)` miles**, within the observed **`r sprintf("%.2f", distance_range[1])`–`r sprintf("%.2f", distance_range[2])` mile** range. Only **`r sum(tracts$dist_ch_mi > turn_final)` tracts** lie beyond it, so I treat the outer upturn as a sparsely supported feature of this fitted polynomial, not evidence that moving farther out causes households to give up vehicles. The lecture warns that a parabola continues outside the data range; I would not extrapolate this curve beyond the observed distances.
+The turning point is **`r sprintf("%.2f", turn_final)` miles**, within the observed **`r sprintf("%.2f", distance_range[1])`–`r sprintf("%.2f", distance_range[2])` mile** range. Only **`r sum(tracts$dist_ch_mi > turn_final)` tracts** lie beyond it, so the upturn has limited support and should not be extrapolated.
 
 ### Where is the final model wrong?
 
@@ -645,7 +639,7 @@ ggplot(residual_maps) +
        caption = "In-sample residuals, not held-out predictions. × = City Hall; north is up.")
 ```
 
-The broad Center City underprediction and Northeast overprediction shrink. Tract 4.03 improves from +43.28 to +7.62 points, and tract 345.01 from −36.49 to −15.96. Positive misses remain in parts of North and West Philadelphia, including tracts 200 and 88.01; some geographic pattern remains visually apparent; I have not performed a formal spatial-autocorrelation test. These maps are descriptive in-sample diagnostics, so the cross-validation results provide the stronger evidence about prediction.
+Center City underprediction and Northeast overprediction shrink: tract 4.03 improves from +43.28 to +7.62 points, and tract 345.01 from −36.49 to −15.96. Underprediction remains in parts of North and West Philadelphia. These are in-sample residuals.
 
 ### Are the biggest misses in the least reliable tracts?
 
@@ -672,7 +666,7 @@ tracts %>% st_drop_geometry() %>% arrange(desc(abs(resid_final))) %>%
   slice_head(n = 5) %>% knitr::kable(digits = 2)
 ```
 
-The biggest errors are not concentrated only in high-CV tracts. The Pearson correlation between CV and absolute residual is **`r sprintf('%.2f', cor(tracts$y_cv, abs(tracts$resid_final)))`**, and several large misses have High or Moderate reliability. The median outcome standard error is **`r sprintf('%.2f', median(tracts$y_moe / 1.645))` points**, so sampling uncertainty matters, but CV is relative to the estimate and cannot identify what fraction of prediction error is noise.
+CV and absolute residual have correlation **`r sprintf('%.2f', cor(tracts$y_cv, abs(tracts$resid_final)))`**; several large misses have High or Moderate reliability. The median outcome standard error is **`r sprintf('%.2f', median(tracts$y_moe / 1.645))` points**, but this plot cannot isolate the share of error due to sampling noise.
 
 ### Validation and limits
 
@@ -715,33 +709,18 @@ tibble(GEOID = model_geoids[cv_final$pred$rowIndex],
   write_csv(file.path(data_dir, "out_of_fold_predictions.csv"))
 ```
 
-The lecture's helper pools all held-out squared errors before taking the square root, whereas the assignment template's `caret` helper averages the ten fold RMSEs. I retain the template metric throughout the model log and report both metrics above in the same percentage-point units. The difference between them is aggregation, not a change of outcome scale. Model selection reuses these folds, so its reported gain may be optimistic; nearby training and validation tracts also share spatial context. A spatially separated or later-period evaluation would be needed before deployment.
+The log uses mean fold RMSE; pooled RMSE aggregates all held-out squared errors first. Reusing random folds for model selection may overstate performance, especially with spatially related tracts.
 
-The final linear model produces **`r sum(fitted(m_final) < 0)` negative fitted percentages** and **`r sum(cv_final$pred$pred < 0)` negative held-out predictions**. I leave these unmodified in every comparison rather than silently clipping them to improve the score. A model bounded to 0–100% is a sensible next step, beyond this assignment's linear-regression workflow.
+The final model has **`r sum(fitted(m_final) < 0)` negative fitted values** and **`r sum(cv_final$pred$pred < 0)` negative held-out predictions**. Scores use these unmodified predictions; a bounded model is a possible next step.
 
 ## Part 7: Reflection
 
 Robbery density was the most useful open-data feature. Adding it to the ACS baseline reduced CV RMSE from 12.33 to 10.86 percentage points, a 1.47-point improvement. Normalizing by area helps separate incident concentration from tract size. Distance to City Hall then absorbed part of the central-versus-peripheral pattern, and its squared term improved the linear-distance model from 9.62 to 9.34. These features may capture overlapping aspects of density, accessibility, and neighborhood conditions; their performance does not identify a causal mechanism.
 
-The sidewalk features disappointed me. Their initial gains were small, and removing both from the quadratic model gave a slightly lower RMSE of 9.32. Complaints depend on reporting and may add little beyond centrality. Logging robbery density also worsened prediction, despite making the histogram less skewed. This was a useful reminder that a plausible transformation must earn its place through validation.
+The sidewalk features disappointed me. Their initial gains were small, and removing both from the quadratic model gave a slightly lower RMSE of 9.32. Complaints depend on reporting and may add little beyond centrality. Logging robbery density also worsened prediction, despite making the histogram less skewed.
 
 **β̂ reading:** Holding the other final-model terms constant, a one-percentage-point higher renter share is associated with about 0.18 percentage points more households without a vehicle. **ŷ reading:** If two tracts have identical values for the other predictors, increasing renter share by ten percentage points raises the model's predicted no-vehicle share by about 1.82 points.
 
 The final map still underpredicts some North and West Philadelphia tracts. I would next measure transit service frequency and walking access using historical 2023 SEPTA GTFS schedules, checking archive coverage before using them. Distance to City Hall cannot represent route quality, transfers, or physical barriers.
 
 Finally, the uncertainty plot does not show a simple increase in error with CV: several large misses have reasonably reliable ACS estimates. A median outcome standard error of 5.50 points indicates meaningful noise, but it cannot be subtracted from RMSE to isolate model error. Sampling uncertainty, omitted variables, and imperfect functional form all remain plausible. The 24.4% improvement is encouraging, but reused random folds and a few negative predictions limit immediate policy use.
-
-## Sources and reproducibility
-
-- [Week 6 recorded lecture: feature engineering, October 9](https://canvas.upenn.edu/courses/1944265/files/167716622), Dr. Elizabeth Delmelle; Part 5 guidance checked on October 14, 2026.
-- [U.S. Census Bureau: 2023 ACS five-year B08201 variables](https://api.census.gov/data/2023/acs/acs5/groups/B08201.html), together with tables B01003, B19013, B25003, B15003, and B25010; retrieved using `tidycensus`.
-- [tidycensus: margin of error for a derived proportion](https://walker-data.com/tidycensus/reference/moe_prop.html).
-- [OpenDataPhilly: Crime Incidents](https://opendataphilly.org/datasets/crime-incidents/), 2023 firearm and non-firearm robberies.
-- [OpenDataPhilly: 311 Service and Information Requests](https://opendataphilly.org/datasets/311-service-and-information-requests/), 2023 Dangerous Sidewalk requests.
-
-The original API responses, variable dictionary, SQL queries, model log, and tract-level audit outputs are saved in `data/assignment4`. To repeat the analysis, render this QMD from the portfolio project. The saved responses preserve the data used here; refreshing them may change results if the city revises historical records.
-
-```{r}
-#| label: session-info
-sessionInfo()
-```
