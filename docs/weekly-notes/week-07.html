@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-10-16">
+<meta name="description" content="Spatial features, residual maps, Moran’s I, permutation tests, and honest house-price prediction, with bilingual review and practice quizzes.">
+
+<title>Week 7: Spatial Errors and House Price Prediction – Oscar Luo - MUSA 5080 Portfolio</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-9d96f532d65220ca877c0304385df42f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Portfolio</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../weekly-notes/index.html"> 
+<span class="menu-text">Weekly Notes</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../assignments/index.html"> 
+<span class="menu-text">Assignments</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/OscarCarrotLuo/MUSA-5080-portfolio"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#what-we-did" id="toc-what-we-did" class="nav-link active" data-scroll-target="#what-we-did">What We Did</a></li>
+  <li><a href="#中文复习重点" id="toc-中文复习重点" class="nav-link" data-scroll-target="#中文复习重点">中文复习重点</a></li>
+  <li><a href="#key-concepts" id="toc-key-concepts" class="nav-link" data-scroll-target="#key-concepts">Key Concepts</a></li>
+  <li><a href="#notes" id="toc-notes" class="nav-link" data-scroll-target="#notes">Notes</a>
+  <ul class="collapse">
+  <li><a href="#review-of-logged-predictors-and-rare-factor-levels" id="toc-review-of-logged-predictors-and-rare-factor-levels" class="nav-link" data-scroll-target="#review-of-logged-predictors-and-rare-factor-levels">1. Review of logged predictors and rare factor levels</a></li>
+  <li><a href="#from-census-tracts-to-individual-houses" id="toc-from-census-tracts-to-individual-houses" class="nav-link" data-scroll-target="#from-census-tracts-to-individual-houses">2. From census tracts to individual houses</a></li>
+  <li><a href="#define-which-sales-belong-in-the-analysis" id="toc-define-which-sales-belong-in-the-analysis" class="nav-link" data-scroll-target="#define-which-sales-belong-in-the-analysis">3. Define which sales belong in the analysis</a></li>
+  <li><a href="#buffer-counts-and-nearest-neighbor-distances" id="toc-buffer-counts-and-nearest-neighbor-distances" class="nav-link" data-scroll-target="#buffer-counts-and-nearest-neighbor-distances">4. Buffer counts and nearest-neighbor distances</a></li>
+  <li><a href="#fit-a-baseline-and-keep-residuals-aligned-with-locations" id="toc-fit-a-baseline-and-keep-residuals-aligned-with-locations" class="nav-link" data-scroll-target="#fit-a-baseline-and-keep-residuals-aligned-with-locations">5. Fit a baseline and keep residuals aligned with locations</a></li>
+  <li><a href="#map-errors-before-reducing-them-to-one-number" id="toc-map-errors-before-reducing-them-to-one-number" class="nav-link" data-scroll-target="#map-errors-before-reducing-them-to-one-number">6. Map errors before reducing them to one number</a></li>
+  <li><a href="#spatial-weights-and-the-spatial-lag" id="toc-spatial-weights-and-the-spatial-lag" class="nav-link" data-scroll-target="#spatial-weights-and-the-spatial-lag">7. Spatial weights and the spatial lag</a></li>
+  <li><a href="#morans-i-and-the-five-house-calculation" id="toc-morans-i-and-the-five-house-calculation" class="nav-link" data-scroll-target="#morans-i-and-the-five-house-calculation">8. Moran’s I and the five-house calculation</a></li>
+  <li><a href="#interpret-the-statistic-and-test-it-by-shuffling" id="toc-interpret-the-statistic-and-test-it-by-shuffling" class="nav-link" data-scroll-target="#interpret-the-statistic-and-test-it-by-shuffling">9. Interpret the statistic and test it by shuffling</a></li>
+  <li><a href="#turn-a-spatial-error-pattern-into-testable-features" id="toc-turn-a-spatial-error-pattern-into-testable-features" class="nav-link" data-scroll-target="#turn-a-spatial-error-pattern-into-testable-features">10. Turn a spatial error pattern into testable features</a></li>
+  <li><a href="#spatial-information-without-target-leakage" id="toc-spatial-information-without-target-leakage" class="nav-link" data-scroll-target="#spatial-information-without-target-leakage">11. Spatial information without target leakage</a></li>
+  <li><a href="#chicago-competition-workflow-and-accountability" id="toc-chicago-competition-workflow-and-accountability" class="nav-link" data-scroll-target="#chicago-competition-workflow-and-accountability">12. Chicago competition workflow and accountability</a></li>
+  </ul></li>
+  <li><a href="#proving-r-works" id="toc-proving-r-works" class="nav-link" data-scroll-target="#proving-r-works">Proving R Works</a></li>
+  <li><a href="#classroom-photo-review" id="toc-classroom-photo-review" class="nav-link" data-scroll-target="#classroom-photo-review">Classroom Photo Review</a></li>
+  <li><a href="#english-multiple-choice-quiz" id="toc-english-multiple-choice-quiz" class="nav-link" data-scroll-target="#english-multiple-choice-quiz">English Multiple Choice Quiz</a>
+  <ul class="collapse">
+  <li><a href="#q1.-reading-a-residual" id="toc-q1.-reading-a-residual" class="nav-link" data-scroll-target="#q1.-reading-a-residual">Q1. Reading a residual</a></li>
+  <li><a href="#q2.-reading-a-logged-predictor" id="toc-q2.-reading-a-logged-predictor" class="nav-link" data-scroll-target="#q2.-reading-a-logged-predictor">Q2. Reading a logged predictor</a></li>
+  <li><a href="#q3.-buffer-counts" id="toc-q3.-buffer-counts" class="nav-link" data-scroll-target="#q3.-buffer-counts">Q3. Buffer counts</a></li>
+  <li><a href="#q4.-spatial-lag" id="toc-q4.-spatial-lag" class="nav-link" data-scroll-target="#q4.-spatial-lag">Q4. Spatial lag</a></li>
+  <li><a href="#q5.-positive-morans-i" id="toc-q5.-positive-morans-i" class="nav-link" data-scroll-target="#q5.-positive-morans-i">Q5. Positive Moran’s I</a></li>
+  <li><a href="#q6.-permutation-testing" id="toc-q6.-permutation-testing" class="nav-link" data-scroll-target="#q6.-permutation-testing">Q6. Permutation testing</a></li>
+  <li><a href="#q7.-small-p-values" id="toc-q7.-small-p-values" class="nav-link" data-scroll-target="#q7.-small-p-values">Q7. Small p-values</a></li>
+  <li><a href="#q8.-comparing-weights" id="toc-q8.-comparing-weights" class="nav-link" data-scroll-target="#q8.-comparing-weights">Q8. Comparing weights</a></li>
+  <li><a href="#q9.-data-leakage" id="toc-q9.-data-leakage" class="nav-link" data-scroll-target="#q9.-data-leakage">Q9. Data leakage</a></li>
+  <li><a href="#q10.-new-factor-levels" id="toc-q10.-new-factor-levels" class="nav-link" data-scroll-target="#q10.-new-factor-levels">Q10. New factor levels</a></li>
+  <li><a href="#q11.-honest-model-comparison" id="toc-q11.-honest-model-comparison" class="nav-link" data-scroll-target="#q11.-honest-model-comparison">Q11. Honest model comparison</a></li>
+  <li><a href="#q12.-a-real-test-set" id="toc-q12.-a-real-test-set" class="nav-link" data-scroll-target="#q12.-a-real-test-set">Q12. A real test set</a></li>
+  </ul></li>
+  <li><a href="#answer-key-and-chinese-explanations" id="toc-answer-key-and-chinese-explanations" class="nav-link" data-scroll-target="#answer-key-and-chinese-explanations">Answer Key and Chinese Explanations</a></li>
+  <li><a href="#reflection" id="toc-reflection" class="nav-link" data-scroll-target="#reflection">Reflection</a></li>
+  <li><a href="#questions-i-still-have" id="toc-questions-i-still-have" class="nav-link" data-scroll-target="#questions-i-still-have">Questions I Still Have</a></li>
+  <li><a href="#sources-and-scope" id="toc-sources-and-scope" class="nav-link" data-scroll-target="#sources-and-scope">Sources and Scope</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Week 7: Spatial Errors and House Price Prediction</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+</div>
+
+<div>
+  <div class="description">
+    Spatial features, residual maps, Moran’s I, permutation tests, and honest house-price prediction, with bilingual review and practice quizzes.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 16, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-we-did" class="level2">
+<h2 class="anchored" data-anchor-id="what-we-did">What We Did</h2>
+<p>This week’s question was <strong>where the model is wrong</strong>, not just how large its average error is. We moved from tract-level rents to individual house sales, built local spatial features, mapped residuals, and used Moran’s I to measure whether neighboring homes have similar errors. The lecture then introduced a Chicago house-price prediction competition with a genuinely held-out test set.</p>
+<p>The main source is Dr.&nbsp;Elizabeth Delmelle’s <em>Where Is the Model Wrong?</em>, dated October 16, 2026. The supplied classroom photo contains four Week 5–6 review questions; those are separated from this week’s new material below. Numerical Philadelphia results are lecture outputs, not newly downloaded or re-estimated sales results. The two figures here reconstruct the lecture’s five-house example; the HTML’s linked empirical map and scatterplot images were not supplied.</p>
+</section>
+<section id="中文复习重点" class="level2">
+<h2 class="anchored" data-anchor-id="中文复习重点">中文复习重点</h2>
+<p><strong>一句话：RMSE 告诉你“平均错多少”，残差地图和 Moran’s I 告诉你“是不是总在某些地方一起错”。</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>重点</th>
+<th>小白理解</th>
+<th>最容易考错的地方</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Residual 残差</td>
+<td>实际房价 − 预测房价</td>
+<td>正数＝预测偏低；负数＝预测偏高</td>
+</tr>
+<tr class="even">
+<td>Buffer count</td>
+<td>以房子为圆心，数一定半径内的事件</td>
+<td>660 ft 是八分之一英里，不是半英里；先检查 CRS 单位</td>
+</tr>
+<tr class="odd">
+<td>kNN distance</td>
+<td>找最近的 k 个事件，计算平均距离</td>
+<td>和“最近的 k 栋房子的残差平均值”不是同一个变量</td>
+</tr>
+<tr class="even">
+<td>Spatial lag</td>
+<td>我邻居的数值加权平均</td>
+<td>行标准化后才是按邻居权重加总的平均，不是时间滞后</td>
+</tr>
+<tr class="odd">
+<td>Moran’s I</td>
+<td>相邻位置的数值是否一起偏高或一起偏低</td>
+<td>不是 RMSE，也不是解释率；结果依赖邻居和权重定义</td>
+</tr>
+<tr class="even">
+<td>Permutation test</td>
+<td>位置不变，把残差重新分配，比较真实 I 是否异常</td>
+<td>p 小不等于效应大，更不等于证明原因</td>
+</tr>
+<tr class="odd">
+<td>Spatial feature engineering</td>
+<td>把遗漏的地点信息变成 X</td>
+<td>可以用已知设施和环境信息，不能偷看待预测房价</td>
+</tr>
+<tr class="even">
+<td>CV versus test</td>
+<td>CV 用来选模型，最后保留 test 做独立检验</td>
+<td>两个 RMSE 差很大是警讯，但不一定就是泄漏</td>
+</tr>
+</tbody>
+</table>
+<p>学习顺序：先记清残差正负 → 理解“邻居平均” → 看五栋房子的手算 → 理解随机打乱检验 → 把结果用于改进特征。</p>
+</section>
+<section id="key-concepts" class="level2">
+<h2 class="anchored" data-anchor-id="key-concepts">Key Concepts</h2>
+<ul>
+<li>Prediction quality has both a magnitude and a geography. A low overall RMSE can coexist with systematic overvaluation in particular neighborhoods.</li>
+<li>A spatial lag is defined by a neighbor rule and a weight matrix. There is no single universal set of neighbors.</li>
+<li>Positive spatial autocorrelation means nearby deviations tend to have the same sign. It suggests structure worth investigating, not a proven cause.</li>
+<li>Compare CV RMSE and residual spatial structure on consistent rows, folds, units, and weights. A smaller Moran’s I alone does not guarantee better prediction.</li>
+<li>Features must be available when a prediction is made. Validation outcomes cannot enter feature construction, directly or through their neighbors.</li>
+</ul>
+</section>
+<section id="notes" class="level2">
+<h2 class="anchored" data-anchor-id="notes">Notes</h2>
+<section id="review-of-logged-predictors-and-rare-factor-levels" class="level3">
+<h3 class="anchored" data-anchor-id="review-of-logged-predictors-and-rare-factor-levels">1. Review of logged predictors and rare factor levels</h3>
+<p>The worked example is a level–log model, with rent still measured in dollars:</p>
+<p><span class="math display">\[
+\widehat{rent}=\beta_0+210\log(income).
+\]</span></p>
+<p>R’s <code>log()</code> is the natural logarithm. A 1% increase in income changes predicted rent by <span class="math inline">\(210\log(1.01)\approx 2.09\)</span> dollars; the usual approximation is <span class="math inline">\(210/100=2.10\)</span> dollars. A 10% increase gives <span class="math inline">\(210\log(1.10)\approx20.02\)</span> dollars, not exactly $21. This is an association conditional on included predictors, not evidence that increasing income causes rent to change.</p>
+<p>The marginal slope is <span class="math inline">\(210/income\)</span>: the predicted curve rises but becomes flatter as income rises. <strong>Logging X is not the same as logging Y.</strong></p>
+<p>The error <code>factor district has new levels Upper Far Northeast</code> means the training fold contained no observations in a category present in validation. The model cannot estimate an effect it never saw. Adding that label to a factor does not magically estimate its coefficient.</p>
+<p>The lecture proposes merging small districts before CV. Use an explicit, substantively sensible grouping, inspect category coverage in every training fold, and apply the same mapping to validation and test data. If grouping or imputation is learned from data, learn it within the training portion; never use held-out outcomes to design the grouping. Around 150 neighborhoods in the house example make rare categories particularly relevant.</p>
+<p>中文：某个街区只有几套房，恰好全被分到验证组，训练时就没有这个街区。 解决办法是合理合并类别、检查每一折和处理未知类别，不是反复换随机种子直到不报错。</p>
+</section>
+<section id="from-census-tracts-to-individual-houses" class="level3">
+<h3 class="anchored" data-anchor-id="from-census-tracts-to-individual-houses">2. From census tracts to individual houses</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Dimension</th>
+<th>Earlier tract analysis</th>
+<th>Week 7 house analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>One row</td>
+<td>A census tract</td>
+<td>A recorded house sale/property record</td>
+</tr>
+<tr class="even">
+<td>Geometry</td>
+<td>Polygon</td>
+<td>Point</td>
+</tr>
+<tr class="odd">
+<td>Approximate scale in the lecture overview</td>
+<td>About 400 tracts</td>
+<td>Tens of thousands of records</td>
+</tr>
+<tr class="even">
+<td>Count feature</td>
+<td>Events within a tract</td>
+<td>Events within a buffer around each house</td>
+</tr>
+<tr class="odd">
+<td>Distance feature</td>
+<td>Nearest facility</td>
+<td>Nearest facility or mean distance to k nearby events</td>
+</tr>
+<tr class="even">
+<td>Place</td>
+<td>Distance to City Hall, district</td>
+<td>Distance to City Hall, neighborhood, local environment</td>
+</tr>
+</tbody>
+</table>
+<p>A buffer creates a polygon around a point, so previous spatial-join tools still apply. Overlapping house buffers may legitimately count the same event more than once: these are house-specific exposures, not disjoint citywide totals. Check parcel identifiers and dates; multiple records at one parcel are not necessarily independent homes, and duplicate locations affect neighbor searches.</p>
+</section>
+<section id="define-which-sales-belong-in-the-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="define-which-sales-belong-in-the-analysis">3. Define which sales belong in the analysis</h3>
+<p>The lecture queries Philadelphia’s <code>opa_properties_public</code>, residential <code>category_code = '1'</code>, and sale dates from January 1, 2023 through December 31, 2024 (<code>sale_date &lt; '2025-01-01'</code>). Its printed starting count is <strong>37,866</strong>. The price distribution includes zero and reaches $15,428,633; the median is $190,000. A recorded transfer is not necessarily an ordinary market transaction.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Price band, using the source <code>cut()</code> boundaries</th>
+<th style="text-align: right;">Lecture count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>At most $1,000</td>
+<td style="text-align: right;">9,171</td>
+</tr>
+<tr class="even">
+<td>More than $1,000 through $10,000</td>
+<td style="text-align: right;">199</td>
+</tr>
+<tr class="odd">
+<td>More than $10,000 through $50,000</td>
+<td style="text-align: right;">1,295</td>
+</tr>
+<tr class="even">
+<td>More than $50,000</td>
+<td style="text-align: right;">27,201</td>
+</tr>
+</tbody>
+</table>
+<p>These total 37,866. The slide’s short labels such as “&lt; $1k” are approximate: default <code>cut()</code> intervals are right-closed, so exactly $1,000 is in the first band. Family transfers, non-market sales, and ownership changes require documented eligibility decisions; a price threshold alone does not prove a transaction was arm’s-length.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># sales_raw is the sf table returned by the class data-loading step.</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># carto_get() in the slides is a course helper, not a base R function.</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>sales <span class="ot">&lt;-</span> sales_raw <span class="sc">|&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="dv">2272</span>) <span class="sc">|&gt;</span>   <span class="co"># Philadelphia; US survey feet</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sale_price <span class="sc">&gt;=</span> <span class="dv">10000</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>         total_livable_area <span class="sc">&gt;</span> <span class="dv">0</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>         <span class="sc">!</span><span class="fu">st_is_empty</span>(geometry)) <span class="sc">|&gt;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year_built =</span> <span class="fu">na_if</span>(<span class="fu">as.numeric</span>(year_built), <span class="dv">0</span>),</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>         <span class="at">age =</span> <span class="dv">2024</span> <span class="sc">-</span> year_built) <span class="sc">|&gt;</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age), <span class="sc">!</span><span class="fu">is.na</span>(number_of_bathrooms))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The lecture reports <strong>27,551</strong> remaining records: 10,315 removed across these combined rules. It does not provide per-rule drop counts. The <code>&gt;= 10000</code> eligibility rule differs from the <code>&gt; 10000</code> boundary between descriptive bands.</p>
+<p>Zero year built means unknown in this example, not a 2,024-year-old house. The fixed reference year 2024 matches the demonstration; age at sale would instead use each sale’s year. Check impossible ages, missing predictor values, and geometry before fitting. Record exclusions in sequence so drop counts are interpretable. Do not remove valid expensive houses merely because the curve is difficult to fit.</p>
+</section>
+<section id="buffer-counts-and-nearest-neighbor-distances" class="level3">
+<h3 class="anchored" data-anchor-id="buffer-counts-and-nearest-neighbor-distances">4. Buffer counts and nearest-neighbor distances</h3>
+<p>The source defines violent incidents using four assault/robbery labels during 2023–2024. These are the lecture’s selected incident categories, not necessarily every possible definition of violent crime.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># violent: the filtered incident points from the class loading step.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>violent <span class="ot">&lt;-</span> violent <span class="sc">|&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">st_is_empty</span>(geometry)) <span class="sc">|&gt;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="fu">st_crs</span>(sales))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">st_crs</span>(sales) <span class="sc">==</span> <span class="fu">st_crs</span>(violent), <span class="fu">nrow</span>(violent) <span class="sc">&gt;=</span> <span class="dv">5</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>sales<span class="sc">$</span>violent_660ft <span class="ot">&lt;-</span> <span class="fu">lengths</span>(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_intersects</span>(<span class="fu">st_buffer</span>(sales, <span class="at">dist =</span> <span class="dv">660</span>), violent)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>nearest_events <span class="ot">&lt;-</span> nngeo<span class="sc">::</span><span class="fu">st_nn</span>(</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  sales, violent, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">returnDist =</span> <span class="cn">TRUE</span>, <span class="at">progress =</span> <span class="cn">FALSE</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>sales<span class="sc">$</span>violent_knn5 <span class="ot">&lt;-</span> <span class="fu">vapply</span>(nearest_events<span class="sc">$</span>dist, mean, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>What stays fixed?</th>
+<th>What varies?</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Buffer count</td>
+<td>Radius: 660 feet</td>
+<td>Number of incidents</td>
+<td>Larger value means more incidents within that radius</td>
+</tr>
+<tr class="even">
+<td>Mean kNN distance</td>
+<td>Number of neighbors: 5 incidents</td>
+<td>Search distance</td>
+<td>Smaller value means selected incidents are closer</td>
+</tr>
+</tbody>
+</table>
+<p><code>st_intersects()</code> returns matching row indices for each buffer; <code>lengths()</code> counts those indices. <code>st_nn(..., returnDist = TRUE)$dist</code> contains a vector of distances for each house; take the mean of each vector. The <a href="https://michaeldorman.github.io/nngeo/reference/st_nn.html">nngeo documentation</a> distinguishes neighbor indices from returned distances.</p>
+<p>660 feet is <span class="math inline">\(660/5280=0.125\)</span> mile. EPSG:2272 uses US survey feet, so a numeric distance of 660 is appropriate here. For Chicago use the lecture’s EPSG:3435, also in US survey feet; do not reuse a Pennsylvania projection for Chicago.</p>
+<p>Counts may be zero when no event falls inside the radius. A kNN distance generally remains informative beyond that radius, but “never zero” is too strong: coincident coordinates can produce zero distances. Compare both representations using the same CV folds. The chosen radius and k are modeling choices, not automatic truths.</p>
+<p>For a real forecasting task, event dates must precede the prediction time. The lecture’s 2023–2024 aggregate is a retrospective demonstration; using late-2024 incidents to predict an early-2023 sale would introduce future information into a prospective application.</p>
+</section>
+<section id="fit-a-baseline-and-keep-residuals-aligned-with-locations" class="level3">
+<h3 class="anchored" data-anchor-id="fit-a-baseline-and-keep-residuals-aligned-with-locations">5. Fit a baseline and keep residuals aligned with locations</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>model_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"sale_price"</span>, <span class="st">"total_livable_area"</span>,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                <span class="st">"number_of_bathrooms"</span>, <span class="st">"age"</span>, <span class="st">"violent_knn5"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>model_df <span class="ot">&lt;-</span> <span class="fu">st_drop_geometry</span>(sales)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>ok <span class="ot">&lt;-</span> <span class="fu">complete.cases</span>(model_df[, model_vars])</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>ok <span class="ot">&lt;-</span> ok <span class="sc">&amp;</span> <span class="fu">Reduce</span>(<span class="st">`</span><span class="at">&amp;</span><span class="st">`</span>, <span class="fu">lapply</span>(model_df[, model_vars], is.finite))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>sales_model <span class="ot">&lt;-</span> sales[ok, ]</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(sale_price <span class="sc">~</span> total_livable_area <span class="sc">+</span> number_of_bathrooms <span class="sc">+</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>           age <span class="sc">+</span> violent_knn5,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">data =</span> <span class="fu">st_drop_geometry</span>(sales_model), <span class="at">na.action =</span> na.fail)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>sales_model<span class="sc">$</span>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(m1, <span class="at">newdata =</span> <span class="fu">st_drop_geometry</span>(sales_model))</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>sales_model<span class="sc">$</span>resid <span class="ot">&lt;-</span> sales_model<span class="sc">$</span>sale_price <span class="sc">-</span> sales_model<span class="sc">$</span>pred</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="math display">\[e_i=y_i-\widehat y_i.\]</span></p>
+<p>If a house sells for $350,000 and the model predicts $300,000, its residual is <strong>+$50,000</strong>: the model underpredicts. If it sells for $250,000 with the same prediction, its residual is <strong>−$50,000</strong>: the model overpredicts.</p>
+<p>Explicitly preparing complete model rows prevents <code>lm()</code> from silently dropping observations while the map still contains every house. Keep a stable record identifier and never attach a reordered residual vector by position. These fitted residuals are <strong>in-sample diagnostics</strong>, not CV prediction errors.</p>
+</section>
+<section id="map-errors-before-reducing-them-to-one-number" class="level3">
+<h3 class="anchored" data-anchor-id="map-errors-before-reducing-them-to-one-number">6. Map errors before reducing them to one number</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(sales_model) <span class="sc">+</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color =</span> resid), <span class="at">size =</span> <span class="fl">0.4</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradient2</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"grey90"</span>, <span class="at">high =</span> <span class="st">"#b2182b"</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">300000</span>, <span class="dv">300000</span>), <span class="at">oob =</span> scales<span class="sc">::</span>squish</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>() <span class="sc">+</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">color =</span> <span class="st">"Actual - predicted ($)"</span>, <span class="at">title =</span> <span class="st">"Where the model is wrong"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Under this legend, red is underprediction and blue is overprediction. <code>alpha</code> reduces overplotting. <code>squish</code> assigns values outside the displayed color limits to an endpoint color; it <strong>does not change the residual data or repair the model</strong>. Keep color limits fixed when comparing models.</p>
+<p>A group of neighboring red houses suggests that the model repeatedly misses something in that area. Possible explanations include omitted amenities, neighborhood differences, an incorrect functional form, or data problems. The map does not tell us which explanation is causal. Map held-out errors as well when evaluating predictive performance.</p>
+</section>
+<section id="spatial-weights-and-the-spatial-lag" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-weights-and-the-spatial-lag">7. Spatial weights and the spatial lag</h3>
+<p>For a house <span class="math inline">\(i\)</span>, let <span class="math inline">\(w_{ij}\)</span> describe how much neighbor <span class="math inline">\(j\)</span> contributes. With five equally weighted neighbors, each weight is <span class="math inline">\(1/5\)</span> and each row sums to one:</p>
+<p><span class="math display">\[
+(We)_i=\sum_j w_{ij}e_j
+=\frac{e_{j_1}+e_{j_2}+e_{j_3}+e_{j_4}+e_{j_5}}5.
+\]</span></p>
+<p>This is a <strong>spatial lag</strong>, meaning neighbors’ values, not values from a previous time period. The house itself is excluded from its neighbor set.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(spdep)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(sales_model)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>nb <span class="ot">&lt;-</span> <span class="fu">knn2nb</span>(<span class="fu">knearneigh</span>(coords, <span class="at">k =</span> <span class="dv">5</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>w_knn <span class="ot">&lt;-</span> <span class="fu">nb2listw</span>(nb, <span class="at">style =</span> <span class="st">"W"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>sales_model<span class="sc">$</span>resid_lag <span class="ot">&lt;-</span> <span class="fu">lag.listw</span>(w_knn, sales_model<span class="sc">$</span>resid)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read from the inside out: coordinates → five nearest houses → neighbor list → weights → weighted residuals. <code>style = "W"</code> row-standardizes weights; <code>style = "B"</code> assigns binary weights instead. See <a href="https://r-spatial.github.io/spdep/reference/nb2listw.html">spdep’s weight definitions</a>.</p>
+<p>Here kNN finds <strong>neighboring houses for a residual diagnostic</strong>. Earlier kNN found <strong>nearby crime events for an X feature</strong>. They use the same distance idea but different objects and purposes. A kNN relationship can also be asymmetric: A can be among B’s nearest neighbors without B being among A’s.</p>
+<p>Use projected coordinates, inspect duplicated locations, ensure enough distinct points for the selected k, and construct weights in exactly the same row order as the residual vector. Changing k changes the spatial question.</p>
+</section>
+<section id="morans-i-and-the-five-house-calculation" class="level3">
+<h3 class="anchored" data-anchor-id="morans-i-and-the-five-house-calculation">8. Moran’s I and the five-house calculation</h3>
+<p>Let <span class="math inline">\(z_i=e_i-\bar e\)</span>, <span class="math inline">\(n\)</span> be the number of houses, and <span class="math inline">\(S_0=\sum_i\sum_jw_{ij}\)</span>. Then</p>
+<p><span class="math display">\[
+I=\frac{n}{S_0}\frac{\sum_i\sum_jw_{ij}z_iz_j}{\sum_i z_i^2}.
+\]</span></p>
+<p>The numerator compares neighboring deviations. Two positive deviations multiply to a positive number; so do two negative deviations. Opposite signs multiply to a negative number. The denominator scales by the overall variation. This matches the <a href="https://r-spatial.github.io/spdep/reference/moran.html">spdep definition of Moran’s I</a>.</p>
+<p>The lecture’s houses form the chain <code>A — B — C — D — E</code>. Only adjacent houses are neighbors. All amounts below are in <strong>thousands of dollars</strong>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 22%">
+<col style="width: 22%">
+<col style="width: 16%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>House</th>
+<th style="text-align: right;">Residual</th>
+<th style="text-align: right;">Deviation from mean of +16</th>
+<th>Adjacent neighbors</th>
+<th style="text-align: right;">Neighbors’ mean residual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td style="text-align: right;">+100</td>
+<td style="text-align: right;">+84</td>
+<td>B</td>
+<td style="text-align: right;">+80</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td style="text-align: right;">+80</td>
+<td style="text-align: right;">+64</td>
+<td>A, C</td>
+<td style="text-align: right;">+60</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td style="text-align: right;">+20</td>
+<td style="text-align: right;">+4</td>
+<td>B, D</td>
+<td style="text-align: right;">+15</td>
+</tr>
+<tr class="even">
+<td>D</td>
+<td style="text-align: right;">−50</td>
+<td style="text-align: right;">−66</td>
+<td>C, E</td>
+<td style="text-align: right;">−25</td>
+</tr>
+<tr class="odd">
+<td>E</td>
+<td style="text-align: right;">−70</td>
+<td style="text-align: right;">−86</td>
+<td>D</td>
+<td style="text-align: right;">−50</td>
+</tr>
+</tbody>
+</table>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="assets/week7-house-residuals.png" class="img-fluid figure-img"></p>
+<figcaption>Exact residuals from the five-house teaching example. Houses are shown in block order, not at geographic coordinates.</figcaption>
+</figure>
+</div>
+<p>Using <strong>binary weights</strong>, every adjacent pair contributes in both directions:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Pair</th>
+<th style="text-align: right;">Product of centered residuals</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A–B</td>
+<td style="text-align: right;"><span class="math inline">\(84\times64=5,376\)</span></td>
+</tr>
+<tr class="even">
+<td>B–C</td>
+<td style="text-align: right;"><span class="math inline">\(64\times4=256\)</span></td>
+</tr>
+<tr class="odd">
+<td>C–D</td>
+<td style="text-align: right;"><span class="math inline">\(4\times(-66)=-264\)</span></td>
+</tr>
+<tr class="even">
+<td>D–E</td>
+<td style="text-align: right;"><span class="math inline">\((-66)\times(-86)=5,676\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>There are eight directed links, so <span class="math inline">\(S_0=8\)</span>. The numerator is <span class="math inline">\(2(5376+256-264+5676)=22,088\)</span>, and the squared deviations sum to 22,920.</p>
+<p><span class="math display">\[I_B=\frac58\frac{22,088}{22,920}=0.6023.\]</span></p>
+<p><strong>Important distinction:</strong> this hand calculation uses binary weights, whereas the preceding R example uses row-standardized weights. With row standardization, the end houses give their single neighbor weight 1, and the three interior houses give each neighbor weight 1/2. The same five values then give <strong><span class="math inline">\(I_W=0.7229\)</span></strong>, not 0.6023.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="assets/week7-moran-scatter.png" class="img-fluid figure-img"></p>
+<figcaption>Moran scatterplot reconstructed from the same five houses using row-standardized weights.</figcaption>
+</figure>
+</div>
+<p>For row-standardized weights without empty neighbor rows, <span class="math inline">\(S_0=n\)</span>. Regressing the spatial lag of centered residuals on centered residuals gives a slope equal to Moran’s I. With binary weights, that equality requires the <span class="math inline">\(n/S_0\)</span> scaling; do not read an arbitrary lag-scatter slope as I.</p>
+<p>中文：A、B 一起偏高，D、E 一起偏低，所以大多数“邻居偏差相乘”是正数。 Moran’s I 用一个数概括这种成团。它比较的是减去平均值后的偏差；这个例子的 平均残差不是零，所以不要漏掉减均值这一步。五栋房子是教学例子，不是一个带 截距 OLS 在全部训练样本上的完整残差集合。</p>
+</section>
+<section id="interpret-the-statistic-and-test-it-by-shuffling" class="level3">
+<h3 class="anchored" data-anchor-id="interpret-the-statistic-and-test-it-by-shuffling">9. Interpret the statistic and test it by shuffling</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Result</th>
+<th>Interpretation</th>
+<th>What it does not establish</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Positive I above the random-labeling baseline</td>
+<td>Similar deviations tend to be neighbors</td>
+<td>A particular omitted variable caused the pattern</td>
+</tr>
+<tr class="even">
+<td>Near the null baseline</td>
+<td>Little global association under this W</td>
+<td>No local clusters, no other errors, or a perfect model</td>
+</tr>
+<tr class="odd">
+<td>Negative I below the baseline</td>
+<td>Neighboring deviations tend to differ</td>
+<td>Necessarily a software mistake</td>
+</tr>
+</tbody>
+</table>
+<p>“Near zero” is a useful large-sample shorthand. Under ordinary random-labeling conditions, the null expectation is <span class="math inline">\(-1/(n-1)\)</span>, not exactly zero; with five houses it is −0.25. Moran’s I is not an ordinary correlation guaranteed to lie between −1 and +1 for every weight matrix. Interpret its magnitude with its weights, sample, and null distribution.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">5080</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>mc <span class="ot">&lt;-</span> <span class="fu">moran.mc</span>(sales_model<span class="sc">$</span>resid, w_knn,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">nsim =</span> <span class="dv">499</span>, <span class="at">alternative =</span> <span class="st">"greater"</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>mc<span class="sc">$</span>statistic</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>mc<span class="sc">$</span>p.value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Keep locations and weights fixed; randomly reassign the observed residuals to those locations 499 times. Compare observed I with this reference distribution. The <a href="https://r-spatial.github.io/spdep/reference/moran.mc.html">spdep permutation test</a> defaults to a one-sided <code>"greater"</code> alternative; state that alternative.</p>
+<p>The lecture reports <strong>I = 0.2605251, p = 0.002</strong> for the Philadelphia model. These are not the five-house results. With 499 simulations, 0.002 is the smallest usual one-sided Monte Carlo p-value, <span class="math inline">\(1/(499+1)\)</span>; it does not mean the probability that “there is no clustering” is 0.2%. It indicates unusually large I under the chosen permutation null. A fitted-residual permutation diagnostic is not a universal exact test of every regression error assumption.</p>
+<p>With many thousands of observations, even modest dependence can be statistically detectable. Report I as well as p, and inspect maps and held-out prediction errors. Keep the same W and sample across model comparisons.</p>
+</section>
+<section id="turn-a-spatial-error-pattern-into-testable-features" class="level3">
+<h3 class="anchored" data-anchor-id="turn-a-spatial-error-pattern-into-testable-features">10. Turn a spatial error pattern into testable features</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Suspected missing information</th>
+<th>Candidate feature</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Local amenity or disamenity</td>
+<td>Distance to transit, nearby incidents, green-space access</td>
+<td>Correct geometry, units, and dates</td>
+</tr>
+<tr class="even">
+<td>Additive neighborhood differences</td>
+<td>Neighborhood fixed effects</td>
+<td>Rare categories and unseen levels</td>
+</tr>
+<tr class="odd">
+<td>A relationship varying by location</td>
+<td>Interaction, such as area × neighborhood</td>
+<td>Enough observations and honest CV</td>
+</tr>
+<tr class="even">
+<td>An overly rigid functional form</td>
+<td>Log or quadratic predictor</td>
+<td>Plausible shape and stable held-out improvement</td>
+</tr>
+</tbody>
+</table>
+<p>Refit a candidate, recompute predictions and I, and compare both diagnostics. Keep a model log with formula, preprocessing, sample size, fold IDs, CV RMSE, residual type, neighbor rule, I, and a short interpretation. Use “in-sample” or “out-of-fold” explicitly for the residuals used in Moran’s I.</p>
+<p>Lower RMSE is better on comparable held-out data. For positive residual clustering, movement toward the null baseline is a useful improvement; making I strongly negative is not an objective. A model with tiny I can still make very large geographically uncorrelated errors. Neighborhood indicators can reduce in-sample clustering simply by absorbing area means, so independent prediction checks remain essential.</p>
+</section>
+<section id="spatial-information-without-target-leakage" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-information-without-target-leakage">11. Spatial information without target leakage</h3>
+<p>The lecture contrasts spatial features with the spatial lag model</p>
+<p><span class="math display">\[y=\rho Wy+X\beta+\varepsilon.\]</span></p>
+<p>The course rule for this competition is <strong>spatial features of X, not neighboring target prices</strong>. Crime exposure or transit access can be available for an unsold home; the final sale prices of its unsold neighbors are not.</p>
+<p>For example, if we calculate every house’s average neighboring sale price from the full dataset and only then split into CV folds, a validation home’s price may already be inside a training home’s feature. The answer has leaked across the split. A neighbor-average residual used for diagnosis also uses observed outcomes; it must not be recycled as an ordinary prediction feature.</p>
+<p>This course restriction is not a theorem that all spatial autoregressive models are incapable of prediction. Specialized out-of-sample methods exist in <a href="https://r-spatial.github.io/spatialreg/reference/predict.sarlm.html">spatialreg</a>. They require careful information-set and validation choices. Nor does a spatial-lag coefficient automatically identify a causal spillover.</p>
+<p>Temporal and geographic leakage matter too. Repeated sales of the same parcel should not accidentally make validation trivial. Random neighboring-house splits evaluate a different task from predicting entirely new neighborhoods or future years. Match validation to the intended use and the instructor’s competition protocol.</p>
+</section>
+<section id="chicago-competition-workflow-and-accountability" class="level3">
+<h3 class="anchored" data-anchor-id="chicago-competition-workflow-and-accountability">12. Chicago competition workflow and accountability</h3>
+<p>These are the requirements stated in the <strong>October 16 slides</strong>, not a new assignment completed in these notes. The slides label this exercise “A4”; it is distinct in topic from the older tract-analysis file already in this portfolio. Use the current Canvas handout for the authoritative assignment version.</p>
+<ul>
+<li>Approximately 23,000 single-family sales from 2023–2025, with house features; teams construct location features.</li>
+<li>Teams of four; due Friday, October 30, according to this lecture.</li>
+<li>Keep the outcome and reported prediction RMSE in dollars.</li>
+<li><code>chicago_train.csv</code>: about 80% of houses, with prices.</li>
+<li><code>chicago_test.csv</code>: about 20%, without prices; the instructor computes test RMSE.</li>
+</ul>
+<p>The workflow is:</p>
+<ol type="1">
+<li>Load train and test, preserve identifiers and test row coverage, create point geometries, and transform to <strong>EPSG:3435</strong>.</li>
+<li>Document training-sale eligibility and per-rule drop counts. Do not silently delete difficult test homes; every required test row needs a prediction.</li>
+<li>Establish common CV folds and a baseline; learn preprocessing within training folds and define missing/unseen-category handling.</li>
+<li>Inspect residual maps and I. Add defensible spatial features; compare on the same folds and record every candidate, not just the winner.</li>
+<li>Select the model without test prices, refit the chosen pipeline on all eligible training data, and generate the requested test predictions.</li>
+<li>Audit errors across areas and price groups, not only overall RMSE. Explain where the model overvalues homes and what that could mean for assessment.</li>
+</ol>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Slide deliverable</th>
+<th>What it should contain</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Rendered <code>.qmd</code> on one teammate’s portfolio</td>
+<td>Reproducible workflow and interpretation; every teammate links it on Canvas</td>
+</tr>
+<tr class="even">
+<td><code>team_XX_predictions.csv</code></td>
+<td>Test identifiers and predictions in the required submission format</td>
+</tr>
+<tr class="odd">
+<td>Model log</td>
+<td>Every model’s CV RMSE and Moran’s I, with comparable definitions</td>
+</tr>
+<tr class="even">
+<td>Failure analysis</td>
+<td>Where errors are largest and whose homes are overvalued</td>
+</tr>
+</tbody>
+</table>
+<p>Q7 on October 30 is described as asking each person about their <strong>own team’s model</strong>: features and reasons, CV versus test RMSE, and the worst failures. Everyone must understand the whole pipeline, even if tasks are divided.</p>
+<p>A large CV/test gap is a reason to investigate leakage, overfitting to CV, sampling variation, distribution shift, or pipeline inconsistencies. It is not proof of leakage by itself, and one test score is still an estimate on one sample, not the exact error for all future homes.</p>
+</section>
+</section>
+<section id="proving-r-works" class="level2">
+<h2 class="anchored" data-anchor-id="proving-r-works">Proving R Works</h2>
+<p>This executable check uses only the lecture’s five-house values. It requires no sales download or API key, and independently distinguishes the two weights.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">80</span>, <span class="dv">20</span>, <span class="sc">-</span><span class="dv">50</span>, <span class="sc">-</span><span class="dv">70</span>)  <span class="co"># thousands of dollars</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> r <span class="sc">-</span> <span class="fu">mean</span>(r)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="cf">function</span>(i, j) <span class="fu">as.numeric</span>(<span class="fu">abs</span>(i <span class="sc">-</span> j) <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>W <span class="ot">&lt;-</span> B <span class="sc">/</span> <span class="fu">rowSums</span>(B)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>moran_I <span class="ot">&lt;-</span> <span class="cf">function</span>(x, weights) {</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  centered <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="fu">mean</span>(x)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">length</span>(x) <span class="sc">/</span> <span class="fu">sum</span>(weights) <span class="sc">*</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(centered <span class="sc">*</span> (weights <span class="sc">%*%</span> centered)) <span class="sc">/</span> <span class="fu">sum</span>(centered<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>lag_z <span class="ot">&lt;-</span> <span class="fu">drop</span>(W <span class="sc">%*%</span> z)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>I_B <span class="ot">&lt;-</span> <span class="fu">moran_I</span>(r, B)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>I_W <span class="ot">&lt;-</span> <span class="fu">moran_I</span>(r, W)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>slope <span class="ot">&lt;-</span> <span class="fu">unname</span>(<span class="fu">coef</span>(<span class="fu">lm</span>(lag_z <span class="sc">~</span> z))[<span class="dv">2</span>])</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">abs</span>(I_W <span class="sc">-</span> slope) <span class="sc">&lt;</span> <span class="fl">1e-12</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">mean_residual_thousands =</span> <span class="fu">mean</span>(r),</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">I_binary =</span> I_B, <span class="at">I_row_standardized =</span> I_W,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">scatter_slope =</span> slope,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">log_X_exact_1pct_dollars =</span> <span class="dv">210</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="fl">1.01</span>)), <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> mean_residual_thousands                 I_binary       I_row_standardized 
+                 16.0000                   0.6023                   0.7229 
+           scatter_slope log_X_exact_1pct_dollars 
+                  0.7229                   2.0896 </code></pre>
+</div>
+</div>
+<p>Expected values: mean = 16; binary I = 0.6023; row-standardized I and scatter slope = 0.7229; the exact 1% log-income change = $2.0896.</p>
+</section>
+<section id="classroom-photo-review" class="level2">
+<h2 class="anchored" data-anchor-id="classroom-photo-review">Classroom Photo Review</h2>
+<p>The photographed questions review Weeks 5–6, rather than introduce new Week 7 spatial statistics. Their answers are <strong>1 C · 2 B · 3 B · 4 D</strong>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Photo question</th>
+<th>Correct idea</th>
+<th>中文解释</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Why ten-fold CV rather than one 80/20 split?</td>
+<td>Each record is held out once; performance uses all folds</td>
+<td>减少依赖某一次幸运划分；每折通常用 90% 训练，不是每折用 100%。仍受折划分影响。</td>
+</tr>
+<tr class="even">
+<td>CV RMSE = $14,200 for income prediction</td>
+<td>Errors have a root-mean-square size of $14,200</td>
+<td>是美元尺度的误差概括，不是 14.2% 解释率、错误记录数或平方误差之和；也不等于 MAE。</td>
+</tr>
+<tr class="odd">
+<td>Northwest coefficient = −140, Central is reference</td>
+<td>At the same income, Northwest predicted rent is $140 lower</td>
+<td>比较的是 Central，不是全市平均；没有交互时，这是截距差，不是收入斜率差。</td>
+</tr>
+<tr class="even">
+<td>Rent rises with income then flattens</td>
+<td>Include income and income squared</td>
+<td>负二次项可使斜率在观察范围内逐渐减小。B“删掉最高收入地区”只是把真实规律删掉，没有建模解释弯曲。</td>
+</tr>
+</tbody>
+</table>
+<p>For the last question, <span class="math inline">\(\widehat{rent}=\beta_0+\beta_1 income+\beta_2 income^2\)</span> has slope <span class="math inline">\(\beta_1+2\beta_2 income\)</span>. A negative <span class="math inline">\(\beta_2\)</span> allows flattening within the observed range, but can eventually imply a downturn outside it. <code>log(income)</code> is another possible shape; the photo’s option C is <strong>logging rent</strong>, not income.</p>
+</section>
+<section id="english-multiple-choice-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="english-multiple-choice-quiz">English Multiple Choice Quiz</h2>
+<p>These are practice questions based on Week 7, not confirmed exam questions. Each has one best answer. 先做题，后看答案和中文解析。</p>
+<section id="q1.-reading-a-residual" class="level3">
+<h3 class="anchored" data-anchor-id="q1.-reading-a-residual">Q1. Reading a residual</h3>
+<p>A home sells for $280,000 and the model predicts $320,000. What is its residual?</p>
+<ul>
+<li>A. +$40,000; the model underpredicts.</li>
+<li>B. −$40,000; the model underpredicts.</li>
+<li>C. −$40,000; the model overpredicts.</li>
+<li>D. +$40,000; the model overpredicts.</li>
+</ul>
+</section>
+<section id="q2.-reading-a-logged-predictor" class="level3">
+<h3 class="anchored" data-anchor-id="q2.-reading-a-logged-predictor">Q2. Reading a logged predictor</h3>
+<p>In <code>rent ~ log(income)</code>, the log-income coefficient is 210 and rent is in dollars. A 1% income increase is associated with approximately:</p>
+<ul>
+<li>A. $2.10 more rent.</li>
+<li>B. $210 more rent.</li>
+<li>C. 210% more rent.</li>
+<li>D. 1% more rent.</li>
+</ul>
+</section>
+<section id="q3.-buffer-counts" class="level3">
+<h3 class="anchored" data-anchor-id="q3.-buffer-counts">Q3. Buffer counts</h3>
+<p>House coordinates use a projected CRS in US survey feet. What does <code>lengths(st_intersects(st_buffer(houses, 660), incidents))</code> return?</p>
+<ul>
+<li>A. The nearest incident’s distance in meters.</li>
+<li>B. The number of incidents within each house’s 660-foot buffer.</li>
+<li>C. The average price of the five nearest houses.</li>
+<li>D. The number of incidents within half a mile of each house.</li>
+</ul>
+</section>
+<section id="q4.-spatial-lag" class="level3">
+<h3 class="anchored" data-anchor-id="q4.-spatial-lag">Q4. Spatial lag</h3>
+<p>A house has three equally weighted neighbors with residuals of +30, −10, and +10 thousand dollars. What is its row-standardized spatial lag?</p>
+<ul>
+<li>A. +30 thousand dollars.</li>
+<li>B. −10 thousand dollars.</li>
+<li>C. +50 thousand dollars.</li>
+<li>D. +10 thousand dollars.</li>
+</ul>
+</section>
+<section id="q5.-positive-morans-i" class="level3">
+<h3 class="anchored" data-anchor-id="q5.-positive-morans-i">Q5. Positive Moran’s I</h3>
+<p>A residual Moran’s I is clearly above its random-labeling baseline. What is the best interpretation?</p>
+<ul>
+<li>A. The model’s RMSE is necessarily low.</li>
+<li>B. Nearby houses tend to have similar centered residuals.</li>
+<li>C. The model has proved that crime causes house prices.</li>
+<li>D. The model explains I percent of the variance in prices.</li>
+</ul>
+</section>
+<section id="q6.-permutation-testing" class="level3">
+<h3 class="anchored" data-anchor-id="q6.-permutation-testing">Q6. Permutation testing</h3>
+<p>What does <code>moran.mc(residuals, weights, nsim = 499)</code> randomize?</p>
+<ul>
+<li>A. The observed residual values across the fixed locations.</li>
+<li>B. The geographic coordinates of every house.</li>
+<li>C. The units of the response variable.</li>
+<li>D. The observed prices by fitting 499 new regression models.</li>
+</ul>
+</section>
+<section id="q7.-small-p-values" class="level3">
+<h3 class="anchored" data-anchor-id="q7.-small-p-values">Q7. Small p-values</h3>
+<p>The lecture reports I = 0.2605 and p = 0.002. Which statement is most appropriate?</p>
+<ul>
+<li>A. There is a 0.2% probability that the null hypothesis is true.</li>
+<li>B. The model’s price predictions are wrong by 0.2605 dollars.</li>
+<li>C. The chosen test detects positive clustering; magnitude and prediction error still matter.</li>
+<li>D. Neighborhood amenities have been established as the cause.</li>
+</ul>
+</section>
+<section id="q8.-comparing-weights" class="level3">
+<h3 class="anchored" data-anchor-id="q8.-comparing-weights">Q8. Comparing weights</h3>
+<p>Why can the five-house example give I = 0.6023 with binary weights and I = 0.7229 with row-standardized weights?</p>
+<ul>
+<li>A. Row standardization changes the sale prices.</li>
+<li>B. One of the calculations must be a software bug.</li>
+<li>C. The sample contains different houses in each calculation.</li>
+<li>D. The relative contributions of neighbors change, especially at the chain’s ends.</li>
+</ul>
+</section>
+<section id="q9.-data-leakage" class="level3">
+<h3 class="anchored" data-anchor-id="q9.-data-leakage">Q9. Data leakage</h3>
+<p>Which feature construction most directly leaks held-out target information?</p>
+<ul>
+<li>A. Distance from each home to a known train station.</li>
+<li>B. Mean neighboring sale price computed using all prices before CV splitting.</li>
+<li>C. A buffer count of events known before the prediction date.</li>
+<li>D. House age computed from a recorded construction year.</li>
+</ul>
+</section>
+<section id="q10.-new-factor-levels" class="level3">
+<h3 class="anchored" data-anchor-id="q10.-new-factor-levels">Q10. New factor levels</h3>
+<p>A validation fold contains a neighborhood absent from its training fold. What is the best response?</p>
+<ul>
+<li>A. Assign an arbitrary coefficient of zero and report no limitation.</li>
+<li>B. Add validation prices to the training set.</li>
+<li>C. Use a documented category strategy and verify coverage and unseen-level handling.</li>
+<li>D. Treat the error as proof that all categorical predictors are useless.</li>
+</ul>
+</section>
+<section id="q11.-honest-model-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="q11.-honest-model-comparison">Q11. Honest model comparison</h3>
+<p>Two models use the same rows and folds. A has CV RMSE $60,000 and residual I 0.01; B has CV RMSE $45,000 and residual I 0.10. Which conclusion is supported?</p>
+<ul>
+<li>A. B predicts more accurately by this RMSE, but its remaining spatial pattern deserves investigation.</li>
+<li>B. A must be preferred because Moran’s I is the only prediction metric.</li>
+<li>C. Neither result can be interpreted without a significant coefficient p-value.</li>
+<li>D. B cannot be used because positive I proves leakage.</li>
+</ul>
+</section>
+<section id="q12.-a-real-test-set" class="level3">
+<h3 class="anchored" data-anchor-id="q12.-a-real-test-set">Q12. A real test set</h3>
+<p>The Chicago test file has predictors but no prices. What should the team do?</p>
+<ul>
+<li>A. Select features by repeatedly checking the hidden test prices.</li>
+<li>B. Delete difficult test homes to reduce RMSE.</li>
+<li>C. Use in-sample training RMSE as the final test RMSE.</li>
+<li>D. Select with training-set CV, refit on training data, and submit predictions for all required test homes.</li>
+</ul>
+</section>
+</section>
+<section id="answer-key-and-chinese-explanations" class="level2">
+<h2 class="anchored" data-anchor-id="answer-key-and-chinese-explanations">Answer Key and Chinese Explanations</h2>
+<p>答案速查：<strong>1 C · 2 A · 3 B · 4 D · 5 B · 6 A · 7 C · 8 D · 9 B · 10 C · 11 A · 12 D</strong>。</p>
+<ol type="1">
+<li><strong>C：实际减预测。</strong> <span class="math inline">\(280000-320000=-40000\)</span>，模型预测比实际贵，所以是高估。</li>
+<li><strong>A：X 取 log，Y 不取 log。</strong> 1% 的 X 变化大约对应 <span class="math inline">\(\beta/100\)</span> 美元的 Y 变化。精确值是 <span class="math inline">\(210\log(1.01)=2.0896\)</span>。</li>
+<li><strong>B：数缓冲区内的事件。</strong> <code>st_buffer()</code> 画圈，<code>st_intersects()</code> 找匹配事件，<code>lengths()</code> 数个数。660 英尺＝0.125 英里，半英里是 2,640 英尺。</li>
+<li><strong>D：邻居平均值。</strong> <span class="math inline">\((30-10+10)/3=10\)</span>。不能只求和，也不把自己的残差再加进去。</li>
+<li><strong>B：相邻位置往往一起偏高或一起偏低。</strong> Moran’s I 不是误差金额或解释率；空间聚集也不直接说明是哪个变量造成的。</li>
+<li><strong>A：位置和权重不动，残差重新分配。</strong> 问的是：如果残差与位置没有这种关联，随机打乱后能否得到同样大或更大的 I？并不是每次重新拟合回归。</li>
+<li><strong>C：统计显著、实际大小、预测准确性分开看。</strong> p 值不是零假设为真的概率；样本很大时很小的空间关系也可能显著。I 不是美元。</li>
+<li><strong>D：权重定义变了。</strong> 二元权重中每条边权重为 1；行标准化时，中间房子的两个邻居各占 1/2，端点的唯一邻居占 1。样本和残差不变，I 仍会变。</li>
+<li><strong>B：验证答案通过邻居进入特征。</strong> 先用全体房价构造邻居均价，再分折，已经泄漏了验证集信息。本次课程要求使用空间 X，不使用邻近目标房价。</li>
+<li><strong>C：解决信息缺失，而不只消除报错。</strong> 合理合并稀有类别并检查每折；只补 factor 标签无法学出不存在的街区系数。不能偷加验证价格。</li>
+<li><strong>A：B 的留出误差较小，但仍有空间结构。</strong> RMSE 衡量预测误差大小，I 衡量地理结构，两者不可互相替代。也要确认两次 I 使用同类残差和同一权重。</li>
+<li><strong>D：CV 选模型，test 做最后独立检验。</strong> 训练集上确定流程，再对全部必需测试记录预测。随意删除难预测房屋会改变评估对象，也可能违背提交要求。</li>
+</ol>
+</section>
+<section id="reflection" class="level2">
+<h2 class="anchored" data-anchor-id="reflection">Reflection</h2>
+<p>An error map changes the question from “Is this model accurate on average?” to “Who and where does this model systematically miss?” Moran’s I helps formalize that question, but cannot replace honest validation or identify a causal mechanism. The practical loop is to inspect errors, propose a defensible feature, compare held-out performance, and document the remaining limitations.</p>
+</section>
+<section id="questions-i-still-have" class="level2">
+<h2 class="anchored" data-anchor-id="questions-i-still-have">Questions I Still Have</h2>
+<ul>
+<li>How much would a random-fold model deteriorate when predicting a new neighborhood or a later year?</li>
+<li>Can a model reduce overvaluation among cheaper homes without making average dollar error worse, and which evaluation would reveal that tradeoff?</li>
+</ul>
+</section>
+<section id="sources-and-scope" class="level2">
+<h2 class="anchored" data-anchor-id="sources-and-scope">Sources and Scope</h2>
+<ul>
+<li>Dr.&nbsp;Elizabeth Delmelle, <em>Where Is the Model Wrong?</em>, Week 7 lecture, October 16, 2026, supplied as <code>week7_slides.html</code>.</li>
+<li>Supplied classroom photo of four review questions on CV, RMSE, factor coefficients, and quadratic features; summarized separately above.</li>
+<li>Official documentation linked beside the relevant <code>nngeo</code>, <code>spdep</code>, and <code>spatialreg</code> explanations.</li>
+<li>The figures use the exact five-house teaching values and are reproducible with <code>weekly-notes/assets/generate-week7-figures.R</code>. They do not substitute invented Philadelphia sales data for the missing empirical figure files.</li>
+<li>Code outside “Proving R Works” is a study template requiring the named class data and installed packages. The numerical check is executed during rendering.</li>
+</ul>
+
+
+<!-- -->
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const cellDetails = window.document.querySelectorAll(".cell details.code-fold");
+        for (let i=0; i<cellDetails.length; i++) {
+          const details = cellDetails[i];
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell div.sourceCode.cell-code");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 7: Spatial Errors and House Price Prediction"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Spatial features, residual maps, Moran's I, permutation tests, and honest house-price prediction, with bilingual review and practice quizzes."</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-10-16</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>This week's question was **where the model is wrong**, not just how large its</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>average error is. We moved from tract-level rents to individual house sales,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>built local spatial features, mapped residuals, and used Moran's I to measure</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>whether neighboring homes have similar errors. The lecture then introduced a</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>Chicago house-price prediction competition with a genuinely held-out test set.</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>The main source is Dr. Elizabeth Delmelle's *Where Is the Model Wrong?*, dated</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>October 16, 2026. The supplied classroom photo contains four Week 5–6 review</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>questions; those are separated from this week's new material below. Numerical</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>Philadelphia results are lecture outputs, not newly downloaded or re-estimated</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>sales results. The two figures here reconstruct the lecture's five-house</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>example; the HTML's linked empirical map and scatterplot images were not supplied.</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="fu">## 中文复习重点</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>**一句话：RMSE 告诉你“平均错多少”，残差地图和 Moran's I 告诉你“是不是总在某些地方一起错”。**</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 重点 <span class="pp">|</span> 小白理解 <span class="pp">|</span> 最容易考错的地方 <span class="pp">|</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Residual 残差 <span class="pp">|</span> 实际房价 − 预测房价 <span class="pp">|</span> 正数＝预测偏低；负数＝预测偏高 <span class="pp">|</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Buffer count <span class="pp">|</span> 以房子为圆心，数一定半径内的事件 <span class="pp">|</span> 660 ft 是八分之一英里，不是半英里；先检查 CRS 单位 <span class="pp">|</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> kNN distance <span class="pp">|</span> 找最近的 k 个事件，计算平均距离 <span class="pp">|</span> 和“最近的 k 栋房子的残差平均值”不是同一个变量 <span class="pp">|</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Spatial lag <span class="pp">|</span> 我邻居的数值加权平均 <span class="pp">|</span> 行标准化后才是按邻居权重加总的平均，不是时间滞后 <span class="pp">|</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Moran's I <span class="pp">|</span> 相邻位置的数值是否一起偏高或一起偏低 <span class="pp">|</span> 不是 RMSE，也不是解释率；结果依赖邻居和权重定义 <span class="pp">|</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Permutation test <span class="pp">|</span> 位置不变，把残差重新分配，比较真实 I 是否异常 <span class="pp">|</span> p 小不等于效应大，更不等于证明原因 <span class="pp">|</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Spatial feature engineering <span class="pp">|</span> 把遗漏的地点信息变成 X <span class="pp">|</span> 可以用已知设施和环境信息，不能偷看待预测房价 <span class="pp">|</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CV versus test <span class="pp">|</span> CV 用来选模型，最后保留 test 做独立检验 <span class="pp">|</span> 两个 RMSE 差很大是警讯，但不一定就是泄漏 <span class="pp">|</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>学习顺序：先记清残差正负 → 理解“邻居平均” → 看五栋房子的手算 → 理解随机打乱检验 → 把结果用于改进特征。</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Prediction quality has both a magnitude and a geography. A low overall RMSE</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>  can coexist with systematic overvaluation in particular neighborhoods.</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A spatial lag is defined by a neighbor rule and a weight matrix. There is no</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  single universal set of neighbors.</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Positive spatial autocorrelation means nearby deviations tend to have the</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>  same sign. It suggests structure worth investigating, not a proven cause.</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Compare CV RMSE and residual spatial structure on consistent rows, folds,</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  units, and weights. A smaller Moran's I alone does not guarantee better prediction.</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Features must be available when a prediction is made. Validation outcomes</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>  cannot enter feature construction, directly or through their neighbors.</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a><span class="fu">## Notes</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a><span class="fu">### 1. Review of logged predictors and rare factor levels</span></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>The worked example is a level–log model, with rent still measured in dollars:</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>\widehat{rent}=\beta_0+210\log(income).</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>R's <span class="in">`log()`</span> is the natural logarithm. A 1% increase in income changes predicted</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>rent by $210\log(1.01)\approx 2.09$ dollars; the usual approximation is</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>$210/100=2.10$ dollars. A 10% increase gives $210\log(1.10)\approx20.02$ dollars,</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>not exactly $21. This is an association conditional on included predictors,</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>not evidence that increasing income causes rent to change.</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>The marginal slope is $210/income$: the predicted curve rises but becomes</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>flatter as income rises. **Logging X is not the same as logging Y.**</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>The error <span class="in">`factor district has new levels Upper Far Northeast`</span> means the</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>training fold contained no observations in a category present in validation.</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>The model cannot estimate an effect it never saw. Adding that label to a factor</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>does not magically estimate its coefficient.</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>The lecture proposes merging small districts before CV. Use an explicit,</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>substantively sensible grouping, inspect category coverage in every training</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>fold, and apply the same mapping to validation and test data. If grouping or</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>imputation is learned from data, learn it within the training portion; never</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>use held-out outcomes to design the grouping. Around 150 neighborhoods in the</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>house example make rare categories particularly relevant.</span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>中文：某个街区只有几套房，恰好全被分到验证组，训练时就没有这个街区。</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>解决办法是合理合并类别、检查每一折和处理未知类别，不是反复换随机种子直到不报错。</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a><span class="fu">### 2. From census tracts to individual houses</span></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Dimension <span class="pp">|</span> Earlier tract analysis <span class="pp">|</span> Week 7 house analysis <span class="pp">|</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> One row <span class="pp">|</span> A census tract <span class="pp">|</span> A recorded house sale/property record <span class="pp">|</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Geometry <span class="pp">|</span> Polygon <span class="pp">|</span> Point <span class="pp">|</span></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Approximate scale in the lecture overview <span class="pp">|</span> About 400 tracts <span class="pp">|</span> Tens of thousands of records <span class="pp">|</span></span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Count feature <span class="pp">|</span> Events within a tract <span class="pp">|</span> Events within a buffer around each house <span class="pp">|</span></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Distance feature <span class="pp">|</span> Nearest facility <span class="pp">|</span> Nearest facility or mean distance to k nearby events <span class="pp">|</span></span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Place <span class="pp">|</span> Distance to City Hall, district <span class="pp">|</span> Distance to City Hall, neighborhood, local environment <span class="pp">|</span></span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>A buffer creates a polygon around a point, so previous spatial-join tools still</span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>apply. Overlapping house buffers may legitimately count the same event more</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>than once: these are house-specific exposures, not disjoint citywide totals.</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>Check parcel identifiers and dates; multiple records at one parcel are not</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>necessarily independent homes, and duplicate locations affect neighbor searches.</span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a><span class="fu">### 3. Define which sales belong in the analysis</span></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>The lecture queries Philadelphia's <span class="in">`opa_properties_public`</span>, residential</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a><span class="in">`category_code = '1'`</span>, and sale dates from January 1, 2023 through December 31,</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>2024 (<span class="in">`sale_date &lt; '2025-01-01'`</span>). Its printed starting count is **37,866**.</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>The price distribution includes zero and reaches $15,428,633; the median is</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>$190,000. A recorded transfer is not necessarily an ordinary market transaction.</span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Price band, using the source <span class="in">`cut()`</span> boundaries <span class="pp">|</span> Lecture count <span class="pp">|</span></span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> At most $1,000 <span class="pp">|</span> 9,171 <span class="pp">|</span></span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> More than $1,000 through $10,000 <span class="pp">|</span> 199 <span class="pp">|</span></span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> More than $10,000 through $50,000 <span class="pp">|</span> 1,295 <span class="pp">|</span></span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> More than $50,000 <span class="pp">|</span> 27,201 <span class="pp">|</span></span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>These total 37,866. The slide's short labels such as “&lt; $1k” are approximate:</span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>default <span class="in">`cut()`</span> intervals are right-closed, so exactly $1,000 is in the first</span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>band. Family transfers, non-market sales, and ownership changes require</span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>documented eligibility decisions; a price threshold alone does not prove a</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>transaction was arm's-length.</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a><span class="co"># sales_raw is the sf table returned by the class data-loading step.</span></span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a><span class="co"># carto_get() in the slides is a course helper, not a base R function.</span></span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a>sales <span class="ot">&lt;-</span> sales_raw <span class="sc">|&gt;</span></span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="dv">2272</span>) <span class="sc">|&gt;</span>   <span class="co"># Philadelphia; US survey feet</span></span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sale_price <span class="sc">&gt;=</span> <span class="dv">10000</span>,</span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a>         total_livable_area <span class="sc">&gt;</span> <span class="dv">0</span>,</span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>         <span class="sc">!</span><span class="fu">st_is_empty</span>(geometry)) <span class="sc">|&gt;</span></span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year_built =</span> <span class="fu">na_if</span>(<span class="fu">as.numeric</span>(year_built), <span class="dv">0</span>),</span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a>         <span class="at">age =</span> <span class="dv">2024</span> <span class="sc">-</span> year_built) <span class="sc">|&gt;</span></span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age), <span class="sc">!</span><span class="fu">is.na</span>(number_of_bathrooms))</span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a>The lecture reports **27,551** remaining records: 10,315 removed across these</span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a>combined rules. It does not provide per-rule drop counts. The <span class="in">`&gt;= 10000`</span></span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a>eligibility rule differs from the <span class="in">`&gt; 10000`</span> boundary between descriptive bands.</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a>Zero year built means unknown in this example, not a 2,024-year-old house.</span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a>The fixed reference year 2024 matches the demonstration; age at sale would</span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a>instead use each sale's year. Check impossible ages, missing predictor values,</span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a>and geometry before fitting. Record exclusions in sequence so drop counts are</span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a>interpretable. Do not remove valid expensive houses merely because the curve</span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a>is difficult to fit.</span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a><span class="fu">### 4. Buffer counts and nearest-neighbor distances</span></span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a>The source defines violent incidents using four assault/robbery labels during</span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a>2023–2024. These are the lecture's selected incident categories, not necessarily</span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a>every possible definition of violent crime.</span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a><span class="co"># violent: the filtered incident points from the class loading step.</span></span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a>violent <span class="ot">&lt;-</span> violent <span class="sc">|&gt;</span></span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">st_is_empty</span>(geometry)) <span class="sc">|&gt;</span></span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="fu">st_crs</span>(sales))</span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">st_crs</span>(sales) <span class="sc">==</span> <span class="fu">st_crs</span>(violent), <span class="fu">nrow</span>(violent) <span class="sc">&gt;=</span> <span class="dv">5</span>)</span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a>sales<span class="sc">$</span>violent_660ft <span class="ot">&lt;-</span> <span class="fu">lengths</span>(</span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_intersects</span>(<span class="fu">st_buffer</span>(sales, <span class="at">dist =</span> <span class="dv">660</span>), violent)</span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a>nearest_events <span class="ot">&lt;-</span> nngeo<span class="sc">::</span><span class="fu">st_nn</span>(</span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a>  sales, violent, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">returnDist =</span> <span class="cn">TRUE</span>, <span class="at">progress =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a>sales<span class="sc">$</span>violent_knn5 <span class="ot">&lt;-</span> <span class="fu">vapply</span>(nearest_events<span class="sc">$</span>dist, mean, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Feature <span class="pp">|</span> What stays fixed? <span class="pp">|</span> What varies? <span class="pp">|</span> Interpretation <span class="pp">|</span></span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Buffer count <span class="pp">|</span> Radius: 660 feet <span class="pp">|</span> Number of incidents <span class="pp">|</span> Larger value means more incidents within that radius <span class="pp">|</span></span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Mean kNN distance <span class="pp">|</span> Number of neighbors: 5 incidents <span class="pp">|</span> Search distance <span class="pp">|</span> Smaller value means selected incidents are closer <span class="pp">|</span></span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a><span class="in">`st_intersects()`</span> returns matching row indices for each buffer; <span class="in">`lengths()`</span></span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a>counts those indices. <span class="in">`st_nn(..., returnDist = TRUE)$dist`</span> contains a vector</span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>of distances for each house; take the mean of each vector. The</span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">nngeo documentation</span><span class="co">](https://michaeldorman.github.io/nngeo/reference/st_nn.html)</span></span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a>distinguishes neighbor indices from returned distances.</span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a>660 feet is $660/5280=0.125$ mile. EPSG:2272 uses US survey feet, so a numeric</span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a>distance of 660 is appropriate here. For Chicago use the lecture's EPSG:3435,</span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a>also in US survey feet; do not reuse a Pennsylvania projection for Chicago.</span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a>Counts may be zero when no event falls inside the radius. A kNN distance</span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a>generally remains informative beyond that radius, but “never zero” is too</span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a>strong: coincident coordinates can produce zero distances. Compare both</span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>representations using the same CV folds. The chosen radius and k are modeling</span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>choices, not automatic truths.</span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>For a real forecasting task, event dates must precede the prediction time.</span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>The lecture's 2023–2024 aggregate is a retrospective demonstration; using</span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>late-2024 incidents to predict an early-2023 sale would introduce future</span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>information into a prospective application.</span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a><span class="fu">### 5. Fit a baseline and keep residuals aligned with locations</span></span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>model_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"sale_price"</span>, <span class="st">"total_livable_area"</span>,</span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>                <span class="st">"number_of_bathrooms"</span>, <span class="st">"age"</span>, <span class="st">"violent_knn5"</span>)</span>
+<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>model_df <span class="ot">&lt;-</span> <span class="fu">st_drop_geometry</span>(sales)</span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a>ok <span class="ot">&lt;-</span> <span class="fu">complete.cases</span>(model_df[, model_vars])</span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a>ok <span class="ot">&lt;-</span> ok <span class="sc">&amp;</span> <span class="fu">Reduce</span>(<span class="st">`</span><span class="at">&amp;</span><span class="st">`</span>, <span class="fu">lapply</span>(model_df[, model_vars], is.finite))</span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>sales_model <span class="ot">&lt;-</span> sales[ok, ]</span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(sale_price <span class="sc">~</span> total_livable_area <span class="sc">+</span> number_of_bathrooms <span class="sc">+</span></span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a>           age <span class="sc">+</span> violent_knn5,</span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a>         <span class="at">data =</span> <span class="fu">st_drop_geometry</span>(sales_model), <span class="at">na.action =</span> na.fail)</span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a>sales_model<span class="sc">$</span>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(m1, <span class="at">newdata =</span> <span class="fu">st_drop_geometry</span>(sales_model))</span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a>sales_model<span class="sc">$</span>resid <span class="ot">&lt;-</span> sales_model<span class="sc">$</span>sale_price <span class="sc">-</span> sales_model<span class="sc">$</span>pred</span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a>$$e_i=y_i-\widehat y_i.$$</span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a>If a house sells for $350,000 and the model predicts $300,000, its residual is</span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a>**+$50,000**: the model underpredicts. If it sells for $250,000 with the same</span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a>prediction, its residual is **−$50,000**: the model overpredicts.</span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>Explicitly preparing complete model rows prevents <span class="in">`lm()`</span> from silently</span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>dropping observations while the map still contains every house. Keep a stable</span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a>record identifier and never attach a reordered residual vector by position.</span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>These fitted residuals are **in-sample diagnostics**, not CV prediction errors.</span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a><span class="fu">### 6. Map errors before reducing them to one number</span></span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(sales_model) <span class="sc">+</span></span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color =</span> resid), <span class="at">size =</span> <span class="fl">0.4</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradient2</span>(</span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a>    <span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"grey90"</span>, <span class="at">high =</span> <span class="st">"#b2182b"</span>,</span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a>    <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">300000</span>, <span class="dv">300000</span>), <span class="at">oob =</span> scales<span class="sc">::</span>squish</span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>() <span class="sc">+</span></span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">color =</span> <span class="st">"Actual - predicted ($)"</span>, <span class="at">title =</span> <span class="st">"Where the model is wrong"</span>)</span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a>Under this legend, red is underprediction and blue is overprediction. <span class="in">`alpha`</span></span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a>reduces overplotting. <span class="in">`squish`</span> assigns values outside the displayed color limits</span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a>to an endpoint color; it **does not change the residual data or repair the</span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a>model**. Keep color limits fixed when comparing models.</span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a>A group of neighboring red houses suggests that the model repeatedly misses</span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a>something in that area. Possible explanations include omitted amenities,</span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a>neighborhood differences, an incorrect functional form, or data problems.</span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a>The map does not tell us which explanation is causal. Map held-out errors as</span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a>well when evaluating predictive performance.</span>
+<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a><span class="fu">### 7. Spatial weights and the spatial lag</span></span>
+<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a>For a house $i$, let $w_{ij}$ describe how much neighbor $j$ contributes. With</span>
+<span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a>five equally weighted neighbors, each weight is $1/5$ and each row sums to one:</span>
+<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a>(We)_i=\sum_j w_{ij}e_j</span>
+<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a>=\frac{e_{j_1}+e_{j_2}+e_{j_3}+e_{j_4}+e_{j_5}}5.</span>
+<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a>This is a **spatial lag**, meaning neighbors' values, not values from a previous</span>
+<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a>time period. The house itself is excluded from its neighbor set.</span>
+<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(spdep)</span>
+<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(sales_model)</span>
+<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a>nb <span class="ot">&lt;-</span> <span class="fu">knn2nb</span>(<span class="fu">knearneigh</span>(coords, <span class="at">k =</span> <span class="dv">5</span>))</span>
+<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a>w_knn <span class="ot">&lt;-</span> <span class="fu">nb2listw</span>(nb, <span class="at">style =</span> <span class="st">"W"</span>)</span>
+<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a>sales_model<span class="sc">$</span>resid_lag <span class="ot">&lt;-</span> <span class="fu">lag.listw</span>(w_knn, sales_model<span class="sc">$</span>resid)</span>
+<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a>Read from the inside out: coordinates → five nearest houses → neighbor list →</span>
+<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a>weights → weighted residuals. <span class="in">`style = "W"`</span> row-standardizes weights;</span>
+<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a><span class="in">`style = "B"`</span> assigns binary weights instead. See</span>
+<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">spdep's weight definitions</span><span class="co">](https://r-spatial.github.io/spdep/reference/nb2listw.html)</span>.</span>
+<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a>Here kNN finds **neighboring houses for a residual diagnostic**. Earlier kNN</span>
+<span id="cb9-280"><a href="#cb9-280" aria-hidden="true" tabindex="-1"></a>found **nearby crime events for an X feature**. They use the same distance idea</span>
+<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a>but different objects and purposes. A kNN relationship can also be asymmetric:</span>
+<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a>A can be among B's nearest neighbors without B being among A's.</span>
+<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a>Use projected coordinates, inspect duplicated locations, ensure enough distinct</span>
+<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a>points for the selected k, and construct weights in exactly the same row order</span>
+<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a>as the residual vector. Changing k changes the spatial question.</span>
+<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a><span class="fu">### 8. Moran's I and the five-house calculation</span></span>
+<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a>Let $z_i=e_i-\bar e$, $n$ be the number of houses, and $S_0=\sum_i\sum_jw_{ij}$.</span>
+<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a>Then</span>
+<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a>I=\frac{n}{S_0}\frac{\sum_i\sum_jw_{ij}z_iz_j}{\sum_i z_i^2}.</span>
+<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-296"><a href="#cb9-296" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-297"><a href="#cb9-297" aria-hidden="true" tabindex="-1"></a>The numerator compares neighboring deviations. Two positive deviations multiply</span>
+<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a>to a positive number; so do two negative deviations. Opposite signs multiply</span>
+<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a>to a negative number. The denominator scales by the overall variation.</span>
+<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a>This matches the <span class="co">[</span><span class="ot">spdep definition of Moran's I</span><span class="co">](https://r-spatial.github.io/spdep/reference/moran.html)</span>.</span>
+<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a>The lecture's houses form the chain <span class="in">`A — B — C — D — E`</span>. Only adjacent houses</span>
+<span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a>are neighbors. All amounts below are in **thousands of dollars**.</span>
+<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-305"><a href="#cb9-305" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> House <span class="pp">|</span> Residual <span class="pp">|</span> Deviation from mean of +16 <span class="pp">|</span> Adjacent neighbors <span class="pp">|</span> Neighbors' mean residual <span class="pp">|</span></span>
+<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---|---:|</span></span>
+<span id="cb9-307"><a href="#cb9-307" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> A <span class="pp">|</span> +100 <span class="pp">|</span> +84 <span class="pp">|</span> B <span class="pp">|</span> +80 <span class="pp">|</span></span>
+<span id="cb9-308"><a href="#cb9-308" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> B <span class="pp">|</span> +80 <span class="pp">|</span> +64 <span class="pp">|</span> A, C <span class="pp">|</span> +60 <span class="pp">|</span></span>
+<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> C <span class="pp">|</span> +20 <span class="pp">|</span> +4 <span class="pp">|</span> B, D <span class="pp">|</span> +15 <span class="pp">|</span></span>
+<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> D <span class="pp">|</span> −50 <span class="pp">|</span> −66 <span class="pp">|</span> C, E <span class="pp">|</span> −25 <span class="pp">|</span></span>
+<span id="cb9-311"><a href="#cb9-311" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> E <span class="pp">|</span> −70 <span class="pp">|</span> −86 <span class="pp">|</span> D <span class="pp">|</span> −50 <span class="pp">|</span></span>
+<span id="cb9-312"><a href="#cb9-312" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-313"><a href="#cb9-313" aria-hidden="true" tabindex="-1"></a><span class="al">![Exact residuals from the five-house teaching example. Houses are shown in block order, not at geographic coordinates.](assets/week7-house-residuals.png)</span></span>
+<span id="cb9-314"><a href="#cb9-314" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-315"><a href="#cb9-315" aria-hidden="true" tabindex="-1"></a>Using **binary weights**, every adjacent pair contributes in both directions:</span>
+<span id="cb9-316"><a href="#cb9-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-317"><a href="#cb9-317" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Pair <span class="pp">|</span> Product of centered residuals <span class="pp">|</span></span>
+<span id="cb9-318"><a href="#cb9-318" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
+<span id="cb9-319"><a href="#cb9-319" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> A–B <span class="pp">|</span> $84\times64=5,376$ <span class="pp">|</span></span>
+<span id="cb9-320"><a href="#cb9-320" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> B–C <span class="pp">|</span> $64\times4=256$ <span class="pp">|</span></span>
+<span id="cb9-321"><a href="#cb9-321" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> C–D <span class="pp">|</span> $4\times(-66)=-264$ <span class="pp">|</span></span>
+<span id="cb9-322"><a href="#cb9-322" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> D–E <span class="pp">|</span> $(-66)\times(-86)=5,676$ <span class="pp">|</span></span>
+<span id="cb9-323"><a href="#cb9-323" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-324"><a href="#cb9-324" aria-hidden="true" tabindex="-1"></a>There are eight directed links, so $S_0=8$. The numerator is</span>
+<span id="cb9-325"><a href="#cb9-325" aria-hidden="true" tabindex="-1"></a>$2(5376+256-264+5676)=22,088$, and the squared deviations sum to 22,920.</span>
+<span id="cb9-326"><a href="#cb9-326" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-327"><a href="#cb9-327" aria-hidden="true" tabindex="-1"></a>$$I_B=\frac58\frac{22,088}{22,920}=0.6023.$$</span>
+<span id="cb9-328"><a href="#cb9-328" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-329"><a href="#cb9-329" aria-hidden="true" tabindex="-1"></a>**Important distinction:** this hand calculation uses binary weights, whereas</span>
+<span id="cb9-330"><a href="#cb9-330" aria-hidden="true" tabindex="-1"></a>the preceding R example uses row-standardized weights. With row standardization,</span>
+<span id="cb9-331"><a href="#cb9-331" aria-hidden="true" tabindex="-1"></a>the end houses give their single neighbor weight 1, and the three interior</span>
+<span id="cb9-332"><a href="#cb9-332" aria-hidden="true" tabindex="-1"></a>houses give each neighbor weight 1/2. The same five values then give</span>
+<span id="cb9-333"><a href="#cb9-333" aria-hidden="true" tabindex="-1"></a>**$I_W=0.7229$**, not 0.6023.</span>
+<span id="cb9-334"><a href="#cb9-334" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-335"><a href="#cb9-335" aria-hidden="true" tabindex="-1"></a><span class="al">![Moran scatterplot reconstructed from the same five houses using row-standardized weights.](assets/week7-moran-scatter.png)</span></span>
+<span id="cb9-336"><a href="#cb9-336" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-337"><a href="#cb9-337" aria-hidden="true" tabindex="-1"></a>For row-standardized weights without empty neighbor rows, $S_0=n$. Regressing</span>
+<span id="cb9-338"><a href="#cb9-338" aria-hidden="true" tabindex="-1"></a>the spatial lag of centered residuals on centered residuals gives a slope</span>
+<span id="cb9-339"><a href="#cb9-339" aria-hidden="true" tabindex="-1"></a>equal to Moran's I. With binary weights, that equality requires the $n/S_0$</span>
+<span id="cb9-340"><a href="#cb9-340" aria-hidden="true" tabindex="-1"></a>scaling; do not read an arbitrary lag-scatter slope as I.</span>
+<span id="cb9-341"><a href="#cb9-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-342"><a href="#cb9-342" aria-hidden="true" tabindex="-1"></a>中文：A、B 一起偏高，D、E 一起偏低，所以大多数“邻居偏差相乘”是正数。</span>
+<span id="cb9-343"><a href="#cb9-343" aria-hidden="true" tabindex="-1"></a>Moran's I 用一个数概括这种成团。它比较的是减去平均值后的偏差；这个例子的</span>
+<span id="cb9-344"><a href="#cb9-344" aria-hidden="true" tabindex="-1"></a>平均残差不是零，所以不要漏掉减均值这一步。五栋房子是教学例子，不是一个带</span>
+<span id="cb9-345"><a href="#cb9-345" aria-hidden="true" tabindex="-1"></a>截距 OLS 在全部训练样本上的完整残差集合。</span>
+<span id="cb9-346"><a href="#cb9-346" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-347"><a href="#cb9-347" aria-hidden="true" tabindex="-1"></a><span class="fu">### 9. Interpret the statistic and test it by shuffling</span></span>
+<span id="cb9-348"><a href="#cb9-348" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-349"><a href="#cb9-349" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Result <span class="pp">|</span> Interpretation <span class="pp">|</span> What it does not establish <span class="pp">|</span></span>
+<span id="cb9-350"><a href="#cb9-350" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-351"><a href="#cb9-351" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Positive I above the random-labeling baseline <span class="pp">|</span> Similar deviations tend to be neighbors <span class="pp">|</span> A particular omitted variable caused the pattern <span class="pp">|</span></span>
+<span id="cb9-352"><a href="#cb9-352" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Near the null baseline <span class="pp">|</span> Little global association under this W <span class="pp">|</span> No local clusters, no other errors, or a perfect model <span class="pp">|</span></span>
+<span id="cb9-353"><a href="#cb9-353" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Negative I below the baseline <span class="pp">|</span> Neighboring deviations tend to differ <span class="pp">|</span> Necessarily a software mistake <span class="pp">|</span></span>
+<span id="cb9-354"><a href="#cb9-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-355"><a href="#cb9-355" aria-hidden="true" tabindex="-1"></a>“Near zero” is a useful large-sample shorthand. Under ordinary random-labeling</span>
+<span id="cb9-356"><a href="#cb9-356" aria-hidden="true" tabindex="-1"></a>conditions, the null expectation is $-1/(n-1)$, not exactly zero; with five</span>
+<span id="cb9-357"><a href="#cb9-357" aria-hidden="true" tabindex="-1"></a>houses it is −0.25. Moran's I is not an ordinary correlation guaranteed to lie</span>
+<span id="cb9-358"><a href="#cb9-358" aria-hidden="true" tabindex="-1"></a>between −1 and +1 for every weight matrix. Interpret its magnitude with its</span>
+<span id="cb9-359"><a href="#cb9-359" aria-hidden="true" tabindex="-1"></a>weights, sample, and null distribution.</span>
+<span id="cb9-360"><a href="#cb9-360" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-361"><a href="#cb9-361" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-362"><a href="#cb9-362" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">5080</span>)</span>
+<span id="cb9-363"><a href="#cb9-363" aria-hidden="true" tabindex="-1"></a>mc <span class="ot">&lt;-</span> <span class="fu">moran.mc</span>(sales_model<span class="sc">$</span>resid, w_knn,</span>
+<span id="cb9-364"><a href="#cb9-364" aria-hidden="true" tabindex="-1"></a>               <span class="at">nsim =</span> <span class="dv">499</span>, <span class="at">alternative =</span> <span class="st">"greater"</span>)</span>
+<span id="cb9-365"><a href="#cb9-365" aria-hidden="true" tabindex="-1"></a>mc<span class="sc">$</span>statistic</span>
+<span id="cb9-366"><a href="#cb9-366" aria-hidden="true" tabindex="-1"></a>mc<span class="sc">$</span>p.value</span>
+<span id="cb9-367"><a href="#cb9-367" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-368"><a href="#cb9-368" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-369"><a href="#cb9-369" aria-hidden="true" tabindex="-1"></a>Keep locations and weights fixed; randomly reassign the observed residuals</span>
+<span id="cb9-370"><a href="#cb9-370" aria-hidden="true" tabindex="-1"></a>to those locations 499 times. Compare observed I with this reference distribution.</span>
+<span id="cb9-371"><a href="#cb9-371" aria-hidden="true" tabindex="-1"></a>The <span class="co">[</span><span class="ot">spdep permutation test</span><span class="co">](https://r-spatial.github.io/spdep/reference/moran.mc.html)</span></span>
+<span id="cb9-372"><a href="#cb9-372" aria-hidden="true" tabindex="-1"></a>defaults to a one-sided <span class="in">`"greater"`</span> alternative; state that alternative.</span>
+<span id="cb9-373"><a href="#cb9-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-374"><a href="#cb9-374" aria-hidden="true" tabindex="-1"></a>The lecture reports **I = 0.2605251, p = 0.002** for the Philadelphia model.</span>
+<span id="cb9-375"><a href="#cb9-375" aria-hidden="true" tabindex="-1"></a>These are not the five-house results. With 499 simulations, 0.002 is the smallest</span>
+<span id="cb9-376"><a href="#cb9-376" aria-hidden="true" tabindex="-1"></a>usual one-sided Monte Carlo p-value, $1/(499+1)$; it does not mean the probability</span>
+<span id="cb9-377"><a href="#cb9-377" aria-hidden="true" tabindex="-1"></a>that “there is no clustering” is 0.2%. It indicates unusually large I under the</span>
+<span id="cb9-378"><a href="#cb9-378" aria-hidden="true" tabindex="-1"></a>chosen permutation null. A fitted-residual permutation diagnostic is not a</span>
+<span id="cb9-379"><a href="#cb9-379" aria-hidden="true" tabindex="-1"></a>universal exact test of every regression error assumption.</span>
+<span id="cb9-380"><a href="#cb9-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-381"><a href="#cb9-381" aria-hidden="true" tabindex="-1"></a>With many thousands of observations, even modest dependence can be statistically</span>
+<span id="cb9-382"><a href="#cb9-382" aria-hidden="true" tabindex="-1"></a>detectable. Report I as well as p, and inspect maps and held-out prediction</span>
+<span id="cb9-383"><a href="#cb9-383" aria-hidden="true" tabindex="-1"></a>errors. Keep the same W and sample across model comparisons.</span>
+<span id="cb9-384"><a href="#cb9-384" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-385"><a href="#cb9-385" aria-hidden="true" tabindex="-1"></a><span class="fu">### 10. Turn a spatial error pattern into testable features</span></span>
+<span id="cb9-386"><a href="#cb9-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-387"><a href="#cb9-387" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Suspected missing information <span class="pp">|</span> Candidate feature <span class="pp">|</span> Check <span class="pp">|</span></span>
+<span id="cb9-388"><a href="#cb9-388" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-389"><a href="#cb9-389" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Local amenity or disamenity <span class="pp">|</span> Distance to transit, nearby incidents, green-space access <span class="pp">|</span> Correct geometry, units, and dates <span class="pp">|</span></span>
+<span id="cb9-390"><a href="#cb9-390" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Additive neighborhood differences <span class="pp">|</span> Neighborhood fixed effects <span class="pp">|</span> Rare categories and unseen levels <span class="pp">|</span></span>
+<span id="cb9-391"><a href="#cb9-391" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> A relationship varying by location <span class="pp">|</span> Interaction, such as area × neighborhood <span class="pp">|</span> Enough observations and honest CV <span class="pp">|</span></span>
+<span id="cb9-392"><a href="#cb9-392" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> An overly rigid functional form <span class="pp">|</span> Log or quadratic predictor <span class="pp">|</span> Plausible shape and stable held-out improvement <span class="pp">|</span></span>
+<span id="cb9-393"><a href="#cb9-393" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-394"><a href="#cb9-394" aria-hidden="true" tabindex="-1"></a>Refit a candidate, recompute predictions and I, and compare both diagnostics.</span>
+<span id="cb9-395"><a href="#cb9-395" aria-hidden="true" tabindex="-1"></a>Keep a model log with formula, preprocessing, sample size, fold IDs, CV RMSE,</span>
+<span id="cb9-396"><a href="#cb9-396" aria-hidden="true" tabindex="-1"></a>residual type, neighbor rule, I, and a short interpretation. Use “in-sample” or</span>
+<span id="cb9-397"><a href="#cb9-397" aria-hidden="true" tabindex="-1"></a>“out-of-fold” explicitly for the residuals used in Moran's I.</span>
+<span id="cb9-398"><a href="#cb9-398" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-399"><a href="#cb9-399" aria-hidden="true" tabindex="-1"></a>Lower RMSE is better on comparable held-out data. For positive residual</span>
+<span id="cb9-400"><a href="#cb9-400" aria-hidden="true" tabindex="-1"></a>clustering, movement toward the null baseline is a useful improvement; making</span>
+<span id="cb9-401"><a href="#cb9-401" aria-hidden="true" tabindex="-1"></a>I strongly negative is not an objective. A model with tiny I can still make</span>
+<span id="cb9-402"><a href="#cb9-402" aria-hidden="true" tabindex="-1"></a>very large geographically uncorrelated errors. Neighborhood indicators can</span>
+<span id="cb9-403"><a href="#cb9-403" aria-hidden="true" tabindex="-1"></a>reduce in-sample clustering simply by absorbing area means, so independent</span>
+<span id="cb9-404"><a href="#cb9-404" aria-hidden="true" tabindex="-1"></a>prediction checks remain essential.</span>
+<span id="cb9-405"><a href="#cb9-405" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-406"><a href="#cb9-406" aria-hidden="true" tabindex="-1"></a><span class="fu">### 11. Spatial information without target leakage</span></span>
+<span id="cb9-407"><a href="#cb9-407" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-408"><a href="#cb9-408" aria-hidden="true" tabindex="-1"></a>The lecture contrasts spatial features with the spatial lag model</span>
+<span id="cb9-409"><a href="#cb9-409" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-410"><a href="#cb9-410" aria-hidden="true" tabindex="-1"></a>$$y=\rho Wy+X\beta+\varepsilon.$$</span>
+<span id="cb9-411"><a href="#cb9-411" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-412"><a href="#cb9-412" aria-hidden="true" tabindex="-1"></a>The course rule for this competition is **spatial features of X, not neighboring</span>
+<span id="cb9-413"><a href="#cb9-413" aria-hidden="true" tabindex="-1"></a>target prices**. Crime exposure or transit access can be available for an unsold</span>
+<span id="cb9-414"><a href="#cb9-414" aria-hidden="true" tabindex="-1"></a>home; the final sale prices of its unsold neighbors are not.</span>
+<span id="cb9-415"><a href="#cb9-415" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-416"><a href="#cb9-416" aria-hidden="true" tabindex="-1"></a>For example, if we calculate every house's average neighboring sale price from</span>
+<span id="cb9-417"><a href="#cb9-417" aria-hidden="true" tabindex="-1"></a>the full dataset and only then split into CV folds, a validation home's price</span>
+<span id="cb9-418"><a href="#cb9-418" aria-hidden="true" tabindex="-1"></a>may already be inside a training home's feature. The answer has leaked across</span>
+<span id="cb9-419"><a href="#cb9-419" aria-hidden="true" tabindex="-1"></a>the split. A neighbor-average residual used for diagnosis also uses observed</span>
+<span id="cb9-420"><a href="#cb9-420" aria-hidden="true" tabindex="-1"></a>outcomes; it must not be recycled as an ordinary prediction feature.</span>
+<span id="cb9-421"><a href="#cb9-421" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-422"><a href="#cb9-422" aria-hidden="true" tabindex="-1"></a>This course restriction is not a theorem that all spatial autoregressive</span>
+<span id="cb9-423"><a href="#cb9-423" aria-hidden="true" tabindex="-1"></a>models are incapable of prediction. Specialized out-of-sample methods exist</span>
+<span id="cb9-424"><a href="#cb9-424" aria-hidden="true" tabindex="-1"></a>in <span class="co">[</span><span class="ot">spatialreg</span><span class="co">](https://r-spatial.github.io/spatialreg/reference/predict.sarlm.html)</span>.</span>
+<span id="cb9-425"><a href="#cb9-425" aria-hidden="true" tabindex="-1"></a>They require careful information-set and validation choices. Nor does a</span>
+<span id="cb9-426"><a href="#cb9-426" aria-hidden="true" tabindex="-1"></a>spatial-lag coefficient automatically identify a causal spillover.</span>
+<span id="cb9-427"><a href="#cb9-427" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-428"><a href="#cb9-428" aria-hidden="true" tabindex="-1"></a>Temporal and geographic leakage matter too. Repeated sales of the same parcel</span>
+<span id="cb9-429"><a href="#cb9-429" aria-hidden="true" tabindex="-1"></a>should not accidentally make validation trivial. Random neighboring-house</span>
+<span id="cb9-430"><a href="#cb9-430" aria-hidden="true" tabindex="-1"></a>splits evaluate a different task from predicting entirely new neighborhoods</span>
+<span id="cb9-431"><a href="#cb9-431" aria-hidden="true" tabindex="-1"></a>or future years. Match validation to the intended use and the instructor's</span>
+<span id="cb9-432"><a href="#cb9-432" aria-hidden="true" tabindex="-1"></a>competition protocol.</span>
+<span id="cb9-433"><a href="#cb9-433" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-434"><a href="#cb9-434" aria-hidden="true" tabindex="-1"></a><span class="fu">### 12. Chicago competition workflow and accountability</span></span>
+<span id="cb9-435"><a href="#cb9-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-436"><a href="#cb9-436" aria-hidden="true" tabindex="-1"></a>These are the requirements stated in the **October 16 slides**, not a new</span>
+<span id="cb9-437"><a href="#cb9-437" aria-hidden="true" tabindex="-1"></a>assignment completed in these notes. The slides label this exercise “A4”; it</span>
+<span id="cb9-438"><a href="#cb9-438" aria-hidden="true" tabindex="-1"></a>is distinct in topic from the older tract-analysis file already in this portfolio.</span>
+<span id="cb9-439"><a href="#cb9-439" aria-hidden="true" tabindex="-1"></a>Use the current Canvas handout for the authoritative assignment version.</span>
+<span id="cb9-440"><a href="#cb9-440" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-441"><a href="#cb9-441" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Approximately 23,000 single-family sales from 2023–2025, with house features;</span>
+<span id="cb9-442"><a href="#cb9-442" aria-hidden="true" tabindex="-1"></a>  teams construct location features.</span>
+<span id="cb9-443"><a href="#cb9-443" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Teams of four; due Friday, October 30, according to this lecture.</span>
+<span id="cb9-444"><a href="#cb9-444" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Keep the outcome and reported prediction RMSE in dollars.</span>
+<span id="cb9-445"><a href="#cb9-445" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`chicago_train.csv`</span>: about 80% of houses, with prices.</span>
+<span id="cb9-446"><a href="#cb9-446" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`chicago_test.csv`</span>: about 20%, without prices; the instructor computes test RMSE.</span>
+<span id="cb9-447"><a href="#cb9-447" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-448"><a href="#cb9-448" aria-hidden="true" tabindex="-1"></a>The workflow is:</span>
+<span id="cb9-449"><a href="#cb9-449" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-450"><a href="#cb9-450" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Load train and test, preserve identifiers and test row coverage, create point</span>
+<span id="cb9-451"><a href="#cb9-451" aria-hidden="true" tabindex="-1"></a>   geometries, and transform to **EPSG:3435**.</span>
+<span id="cb9-452"><a href="#cb9-452" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Document training-sale eligibility and per-rule drop counts. Do not silently</span>
+<span id="cb9-453"><a href="#cb9-453" aria-hidden="true" tabindex="-1"></a>   delete difficult test homes; every required test row needs a prediction.</span>
+<span id="cb9-454"><a href="#cb9-454" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Establish common CV folds and a baseline; learn preprocessing within training</span>
+<span id="cb9-455"><a href="#cb9-455" aria-hidden="true" tabindex="-1"></a>   folds and define missing/unseen-category handling.</span>
+<span id="cb9-456"><a href="#cb9-456" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Inspect residual maps and I. Add defensible spatial features; compare on the</span>
+<span id="cb9-457"><a href="#cb9-457" aria-hidden="true" tabindex="-1"></a>   same folds and record every candidate, not just the winner.</span>
+<span id="cb9-458"><a href="#cb9-458" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Select the model without test prices, refit the chosen pipeline on all eligible</span>
+<span id="cb9-459"><a href="#cb9-459" aria-hidden="true" tabindex="-1"></a>   training data, and generate the requested test predictions.</span>
+<span id="cb9-460"><a href="#cb9-460" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>Audit errors across areas and price groups, not only overall RMSE. Explain</span>
+<span id="cb9-461"><a href="#cb9-461" aria-hidden="true" tabindex="-1"></a>   where the model overvalues homes and what that could mean for assessment.</span>
+<span id="cb9-462"><a href="#cb9-462" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-463"><a href="#cb9-463" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Slide deliverable <span class="pp">|</span> What it should contain <span class="pp">|</span></span>
+<span id="cb9-464"><a href="#cb9-464" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb9-465"><a href="#cb9-465" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Rendered <span class="in">`.qmd`</span> on one teammate's portfolio <span class="pp">|</span> Reproducible workflow and interpretation; every teammate links it on Canvas <span class="pp">|</span></span>
+<span id="cb9-466"><a href="#cb9-466" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`team_XX_predictions.csv`</span> <span class="pp">|</span> Test identifiers and predictions in the required submission format <span class="pp">|</span></span>
+<span id="cb9-467"><a href="#cb9-467" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Model log <span class="pp">|</span> Every model's CV RMSE and Moran's I, with comparable definitions <span class="pp">|</span></span>
+<span id="cb9-468"><a href="#cb9-468" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Failure analysis <span class="pp">|</span> Where errors are largest and whose homes are overvalued <span class="pp">|</span></span>
+<span id="cb9-469"><a href="#cb9-469" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-470"><a href="#cb9-470" aria-hidden="true" tabindex="-1"></a>Q7 on October 30 is described as asking each person about their **own team's</span>
+<span id="cb9-471"><a href="#cb9-471" aria-hidden="true" tabindex="-1"></a>model**: features and reasons, CV versus test RMSE, and the worst failures.</span>
+<span id="cb9-472"><a href="#cb9-472" aria-hidden="true" tabindex="-1"></a>Everyone must understand the whole pipeline, even if tasks are divided.</span>
+<span id="cb9-473"><a href="#cb9-473" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-474"><a href="#cb9-474" aria-hidden="true" tabindex="-1"></a>A large CV/test gap is a reason to investigate leakage, overfitting to CV,</span>
+<span id="cb9-475"><a href="#cb9-475" aria-hidden="true" tabindex="-1"></a>sampling variation, distribution shift, or pipeline inconsistencies. It is not</span>
+<span id="cb9-476"><a href="#cb9-476" aria-hidden="true" tabindex="-1"></a>proof of leakage by itself, and one test score is still an estimate on one</span>
+<span id="cb9-477"><a href="#cb9-477" aria-hidden="true" tabindex="-1"></a>sample, not the exact error for all future homes.</span>
+<span id="cb9-478"><a href="#cb9-478" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-479"><a href="#cb9-479" aria-hidden="true" tabindex="-1"></a><span class="fu">## Proving R Works</span></span>
+<span id="cb9-480"><a href="#cb9-480" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-481"><a href="#cb9-481" aria-hidden="true" tabindex="-1"></a>This executable check uses only the lecture's five-house values. It requires</span>
+<span id="cb9-482"><a href="#cb9-482" aria-hidden="true" tabindex="-1"></a>no sales download or API key, and independently distinguishes the two weights.</span>
+<span id="cb9-483"><a href="#cb9-483" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-486"><a href="#cb9-486" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-487"><a href="#cb9-487" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: week7-numerical-check</span></span>
+<span id="cb9-488"><a href="#cb9-488" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">80</span>, <span class="dv">20</span>, <span class="sc">-</span><span class="dv">50</span>, <span class="sc">-</span><span class="dv">70</span>)  <span class="co"># thousands of dollars</span></span>
+<span id="cb9-489"><a href="#cb9-489" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> r <span class="sc">-</span> <span class="fu">mean</span>(r)</span>
+<span id="cb9-490"><a href="#cb9-490" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="cf">function</span>(i, j) <span class="fu">as.numeric</span>(<span class="fu">abs</span>(i <span class="sc">-</span> j) <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb9-491"><a href="#cb9-491" aria-hidden="true" tabindex="-1"></a>W <span class="ot">&lt;-</span> B <span class="sc">/</span> <span class="fu">rowSums</span>(B)</span>
+<span id="cb9-492"><a href="#cb9-492" aria-hidden="true" tabindex="-1"></a>moran_I <span class="ot">&lt;-</span> <span class="cf">function</span>(x, weights) {</span>
+<span id="cb9-493"><a href="#cb9-493" aria-hidden="true" tabindex="-1"></a>  centered <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="fu">mean</span>(x)</span>
+<span id="cb9-494"><a href="#cb9-494" aria-hidden="true" tabindex="-1"></a>  <span class="fu">length</span>(x) <span class="sc">/</span> <span class="fu">sum</span>(weights) <span class="sc">*</span></span>
+<span id="cb9-495"><a href="#cb9-495" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(centered <span class="sc">*</span> (weights <span class="sc">%*%</span> centered)) <span class="sc">/</span> <span class="fu">sum</span>(centered<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb9-496"><a href="#cb9-496" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-497"><a href="#cb9-497" aria-hidden="true" tabindex="-1"></a>lag_z <span class="ot">&lt;-</span> <span class="fu">drop</span>(W <span class="sc">%*%</span> z)</span>
+<span id="cb9-498"><a href="#cb9-498" aria-hidden="true" tabindex="-1"></a>I_B <span class="ot">&lt;-</span> <span class="fu">moran_I</span>(r, B)</span>
+<span id="cb9-499"><a href="#cb9-499" aria-hidden="true" tabindex="-1"></a>I_W <span class="ot">&lt;-</span> <span class="fu">moran_I</span>(r, W)</span>
+<span id="cb9-500"><a href="#cb9-500" aria-hidden="true" tabindex="-1"></a>slope <span class="ot">&lt;-</span> <span class="fu">unname</span>(<span class="fu">coef</span>(<span class="fu">lm</span>(lag_z <span class="sc">~</span> z))[<span class="dv">2</span>])</span>
+<span id="cb9-501"><a href="#cb9-501" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">abs</span>(I_W <span class="sc">-</span> slope) <span class="sc">&lt;</span> <span class="fl">1e-12</span>)</span>
+<span id="cb9-502"><a href="#cb9-502" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">mean_residual_thousands =</span> <span class="fu">mean</span>(r),</span>
+<span id="cb9-503"><a href="#cb9-503" aria-hidden="true" tabindex="-1"></a>        <span class="at">I_binary =</span> I_B, <span class="at">I_row_standardized =</span> I_W,</span>
+<span id="cb9-504"><a href="#cb9-504" aria-hidden="true" tabindex="-1"></a>        <span class="at">scatter_slope =</span> slope,</span>
+<span id="cb9-505"><a href="#cb9-505" aria-hidden="true" tabindex="-1"></a>        <span class="at">log_X_exact_1pct_dollars =</span> <span class="dv">210</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="fl">1.01</span>)), <span class="dv">4</span>)</span>
+<span id="cb9-506"><a href="#cb9-506" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-507"><a href="#cb9-507" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-508"><a href="#cb9-508" aria-hidden="true" tabindex="-1"></a>Expected values: mean = 16; binary I = 0.6023; row-standardized I and scatter</span>
+<span id="cb9-509"><a href="#cb9-509" aria-hidden="true" tabindex="-1"></a>slope = 0.7229; the exact 1% log-income change = $2.0896.</span>
+<span id="cb9-510"><a href="#cb9-510" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-511"><a href="#cb9-511" aria-hidden="true" tabindex="-1"></a><span class="fu">## Classroom Photo Review</span></span>
+<span id="cb9-512"><a href="#cb9-512" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-513"><a href="#cb9-513" aria-hidden="true" tabindex="-1"></a>The photographed questions review Weeks 5–6, rather than introduce new Week 7</span>
+<span id="cb9-514"><a href="#cb9-514" aria-hidden="true" tabindex="-1"></a>spatial statistics. Their answers are **1 C · 2 B · 3 B · 4 D**.</span>
+<span id="cb9-515"><a href="#cb9-515" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-516"><a href="#cb9-516" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Photo question <span class="pp">|</span> Correct idea <span class="pp">|</span> 中文解释 <span class="pp">|</span></span>
+<span id="cb9-517"><a href="#cb9-517" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-518"><a href="#cb9-518" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Why ten-fold CV rather than one 80/20 split? <span class="pp">|</span> Each record is held out once; performance uses all folds <span class="pp">|</span> 减少依赖某一次幸运划分；每折通常用 90% 训练，不是每折用 100%。仍受折划分影响。 <span class="pp">|</span></span>
+<span id="cb9-519"><a href="#cb9-519" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CV RMSE = $14,200 for income prediction <span class="pp">|</span> Errors have a root-mean-square size of $14,200 <span class="pp">|</span> 是美元尺度的误差概括，不是 14.2% 解释率、错误记录数或平方误差之和；也不等于 MAE。 <span class="pp">|</span></span>
+<span id="cb9-520"><a href="#cb9-520" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Northwest coefficient = −140, Central is reference <span class="pp">|</span> At the same income, Northwest predicted rent is $140 lower <span class="pp">|</span> 比较的是 Central，不是全市平均；没有交互时，这是截距差，不是收入斜率差。 <span class="pp">|</span></span>
+<span id="cb9-521"><a href="#cb9-521" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Rent rises with income then flattens <span class="pp">|</span> Include income and income squared <span class="pp">|</span> 负二次项可使斜率在观察范围内逐渐减小。B“删掉最高收入地区”只是把真实规律删掉，没有建模解释弯曲。 <span class="pp">|</span></span>
+<span id="cb9-522"><a href="#cb9-522" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-523"><a href="#cb9-523" aria-hidden="true" tabindex="-1"></a>For the last question,</span>
+<span id="cb9-524"><a href="#cb9-524" aria-hidden="true" tabindex="-1"></a>$\widehat{rent}=\beta_0+\beta_1 income+\beta_2 income^2$ has slope</span>
+<span id="cb9-525"><a href="#cb9-525" aria-hidden="true" tabindex="-1"></a>$\beta_1+2\beta_2 income$. A negative $\beta_2$ allows flattening within the</span>
+<span id="cb9-526"><a href="#cb9-526" aria-hidden="true" tabindex="-1"></a>observed range, but can eventually imply a downturn outside it. <span class="in">`log(income)`</span></span>
+<span id="cb9-527"><a href="#cb9-527" aria-hidden="true" tabindex="-1"></a>is another possible shape; the photo's option C is **logging rent**, not income.</span>
+<span id="cb9-528"><a href="#cb9-528" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-529"><a href="#cb9-529" aria-hidden="true" tabindex="-1"></a><span class="fu">## English Multiple Choice Quiz</span></span>
+<span id="cb9-530"><a href="#cb9-530" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-531"><a href="#cb9-531" aria-hidden="true" tabindex="-1"></a>These are practice questions based on Week 7, not confirmed exam questions.</span>
+<span id="cb9-532"><a href="#cb9-532" aria-hidden="true" tabindex="-1"></a>Each has one best answer. 先做题，后看答案和中文解析。</span>
+<span id="cb9-533"><a href="#cb9-533" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-534"><a href="#cb9-534" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q1. Reading a residual</span></span>
+<span id="cb9-535"><a href="#cb9-535" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-536"><a href="#cb9-536" aria-hidden="true" tabindex="-1"></a>A home sells for $280,000 and the model predicts $320,000. What is its residual?</span>
+<span id="cb9-537"><a href="#cb9-537" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-538"><a href="#cb9-538" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. +$40,000; the model underpredicts.</span>
+<span id="cb9-539"><a href="#cb9-539" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. −$40,000; the model underpredicts.</span>
+<span id="cb9-540"><a href="#cb9-540" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. −$40,000; the model overpredicts.</span>
+<span id="cb9-541"><a href="#cb9-541" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. +$40,000; the model overpredicts.</span>
+<span id="cb9-542"><a href="#cb9-542" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-543"><a href="#cb9-543" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q2. Reading a logged predictor</span></span>
+<span id="cb9-544"><a href="#cb9-544" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-545"><a href="#cb9-545" aria-hidden="true" tabindex="-1"></a>In <span class="in">`rent ~ log(income)`</span>, the log-income coefficient is 210 and rent is in dollars.</span>
+<span id="cb9-546"><a href="#cb9-546" aria-hidden="true" tabindex="-1"></a>A 1% income increase is associated with approximately:</span>
+<span id="cb9-547"><a href="#cb9-547" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-548"><a href="#cb9-548" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. $2.10 more rent.</span>
+<span id="cb9-549"><a href="#cb9-549" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. $210 more rent.</span>
+<span id="cb9-550"><a href="#cb9-550" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. 210% more rent.</span>
+<span id="cb9-551"><a href="#cb9-551" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. 1% more rent.</span>
+<span id="cb9-552"><a href="#cb9-552" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-553"><a href="#cb9-553" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q3. Buffer counts</span></span>
+<span id="cb9-554"><a href="#cb9-554" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-555"><a href="#cb9-555" aria-hidden="true" tabindex="-1"></a>House coordinates use a projected CRS in US survey feet. What does</span>
+<span id="cb9-556"><a href="#cb9-556" aria-hidden="true" tabindex="-1"></a><span class="in">`lengths(st_intersects(st_buffer(houses, 660), incidents))`</span> return?</span>
+<span id="cb9-557"><a href="#cb9-557" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-558"><a href="#cb9-558" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. The nearest incident's distance in meters.</span>
+<span id="cb9-559"><a href="#cb9-559" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. The number of incidents within each house's 660-foot buffer.</span>
+<span id="cb9-560"><a href="#cb9-560" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. The average price of the five nearest houses.</span>
+<span id="cb9-561"><a href="#cb9-561" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. The number of incidents within half a mile of each house.</span>
+<span id="cb9-562"><a href="#cb9-562" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-563"><a href="#cb9-563" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q4. Spatial lag</span></span>
+<span id="cb9-564"><a href="#cb9-564" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-565"><a href="#cb9-565" aria-hidden="true" tabindex="-1"></a>A house has three equally weighted neighbors with residuals of +30, −10, and</span>
+<span id="cb9-566"><a href="#cb9-566" aria-hidden="true" tabindex="-1"></a>+10 thousand dollars. What is its row-standardized spatial lag?</span>
+<span id="cb9-567"><a href="#cb9-567" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-568"><a href="#cb9-568" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. +30 thousand dollars.</span>
+<span id="cb9-569"><a href="#cb9-569" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. −10 thousand dollars.</span>
+<span id="cb9-570"><a href="#cb9-570" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. +50 thousand dollars.</span>
+<span id="cb9-571"><a href="#cb9-571" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. +10 thousand dollars.</span>
+<span id="cb9-572"><a href="#cb9-572" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-573"><a href="#cb9-573" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q5. Positive Moran's I</span></span>
+<span id="cb9-574"><a href="#cb9-574" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-575"><a href="#cb9-575" aria-hidden="true" tabindex="-1"></a>A residual Moran's I is clearly above its random-labeling baseline. What is the</span>
+<span id="cb9-576"><a href="#cb9-576" aria-hidden="true" tabindex="-1"></a>best interpretation?</span>
+<span id="cb9-577"><a href="#cb9-577" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-578"><a href="#cb9-578" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. The model's RMSE is necessarily low.</span>
+<span id="cb9-579"><a href="#cb9-579" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. Nearby houses tend to have similar centered residuals.</span>
+<span id="cb9-580"><a href="#cb9-580" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. The model has proved that crime causes house prices.</span>
+<span id="cb9-581"><a href="#cb9-581" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. The model explains I percent of the variance in prices.</span>
+<span id="cb9-582"><a href="#cb9-582" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-583"><a href="#cb9-583" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q6. Permutation testing</span></span>
+<span id="cb9-584"><a href="#cb9-584" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-585"><a href="#cb9-585" aria-hidden="true" tabindex="-1"></a>What does <span class="in">`moran.mc(residuals, weights, nsim = 499)`</span> randomize?</span>
+<span id="cb9-586"><a href="#cb9-586" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-587"><a href="#cb9-587" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. The observed residual values across the fixed locations.</span>
+<span id="cb9-588"><a href="#cb9-588" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. The geographic coordinates of every house.</span>
+<span id="cb9-589"><a href="#cb9-589" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. The units of the response variable.</span>
+<span id="cb9-590"><a href="#cb9-590" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. The observed prices by fitting 499 new regression models.</span>
+<span id="cb9-591"><a href="#cb9-591" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-592"><a href="#cb9-592" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q7. Small p-values</span></span>
+<span id="cb9-593"><a href="#cb9-593" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-594"><a href="#cb9-594" aria-hidden="true" tabindex="-1"></a>The lecture reports I = 0.2605 and p = 0.002. Which statement is most appropriate?</span>
+<span id="cb9-595"><a href="#cb9-595" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-596"><a href="#cb9-596" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. There is a 0.2% probability that the null hypothesis is true.</span>
+<span id="cb9-597"><a href="#cb9-597" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. The model's price predictions are wrong by 0.2605 dollars.</span>
+<span id="cb9-598"><a href="#cb9-598" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. The chosen test detects positive clustering; magnitude and prediction error still matter.</span>
+<span id="cb9-599"><a href="#cb9-599" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. Neighborhood amenities have been established as the cause.</span>
+<span id="cb9-600"><a href="#cb9-600" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-601"><a href="#cb9-601" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q8. Comparing weights</span></span>
+<span id="cb9-602"><a href="#cb9-602" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-603"><a href="#cb9-603" aria-hidden="true" tabindex="-1"></a>Why can the five-house example give I = 0.6023 with binary weights and I = 0.7229</span>
+<span id="cb9-604"><a href="#cb9-604" aria-hidden="true" tabindex="-1"></a>with row-standardized weights?</span>
+<span id="cb9-605"><a href="#cb9-605" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-606"><a href="#cb9-606" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. Row standardization changes the sale prices.</span>
+<span id="cb9-607"><a href="#cb9-607" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. One of the calculations must be a software bug.</span>
+<span id="cb9-608"><a href="#cb9-608" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. The sample contains different houses in each calculation.</span>
+<span id="cb9-609"><a href="#cb9-609" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. The relative contributions of neighbors change, especially at the chain's ends.</span>
+<span id="cb9-610"><a href="#cb9-610" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-611"><a href="#cb9-611" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q9. Data leakage</span></span>
+<span id="cb9-612"><a href="#cb9-612" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-613"><a href="#cb9-613" aria-hidden="true" tabindex="-1"></a>Which feature construction most directly leaks held-out target information?</span>
+<span id="cb9-614"><a href="#cb9-614" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-615"><a href="#cb9-615" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. Distance from each home to a known train station.</span>
+<span id="cb9-616"><a href="#cb9-616" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. Mean neighboring sale price computed using all prices before CV splitting.</span>
+<span id="cb9-617"><a href="#cb9-617" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. A buffer count of events known before the prediction date.</span>
+<span id="cb9-618"><a href="#cb9-618" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. House age computed from a recorded construction year.</span>
+<span id="cb9-619"><a href="#cb9-619" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-620"><a href="#cb9-620" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q10. New factor levels</span></span>
+<span id="cb9-621"><a href="#cb9-621" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-622"><a href="#cb9-622" aria-hidden="true" tabindex="-1"></a>A validation fold contains a neighborhood absent from its training fold. What</span>
+<span id="cb9-623"><a href="#cb9-623" aria-hidden="true" tabindex="-1"></a>is the best response?</span>
+<span id="cb9-624"><a href="#cb9-624" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-625"><a href="#cb9-625" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. Assign an arbitrary coefficient of zero and report no limitation.</span>
+<span id="cb9-626"><a href="#cb9-626" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. Add validation prices to the training set.</span>
+<span id="cb9-627"><a href="#cb9-627" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. Use a documented category strategy and verify coverage and unseen-level handling.</span>
+<span id="cb9-628"><a href="#cb9-628" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. Treat the error as proof that all categorical predictors are useless.</span>
+<span id="cb9-629"><a href="#cb9-629" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-630"><a href="#cb9-630" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q11. Honest model comparison</span></span>
+<span id="cb9-631"><a href="#cb9-631" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-632"><a href="#cb9-632" aria-hidden="true" tabindex="-1"></a>Two models use the same rows and folds. A has CV RMSE $60,000 and residual I 0.01;</span>
+<span id="cb9-633"><a href="#cb9-633" aria-hidden="true" tabindex="-1"></a>B has CV RMSE $45,000 and residual I 0.10. Which conclusion is supported?</span>
+<span id="cb9-634"><a href="#cb9-634" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-635"><a href="#cb9-635" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. B predicts more accurately by this RMSE, but its remaining spatial pattern deserves investigation.</span>
+<span id="cb9-636"><a href="#cb9-636" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. A must be preferred because Moran's I is the only prediction metric.</span>
+<span id="cb9-637"><a href="#cb9-637" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. Neither result can be interpreted without a significant coefficient p-value.</span>
+<span id="cb9-638"><a href="#cb9-638" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. B cannot be used because positive I proves leakage.</span>
+<span id="cb9-639"><a href="#cb9-639" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-640"><a href="#cb9-640" aria-hidden="true" tabindex="-1"></a><span class="fu">### Q12. A real test set</span></span>
+<span id="cb9-641"><a href="#cb9-641" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-642"><a href="#cb9-642" aria-hidden="true" tabindex="-1"></a>The Chicago test file has predictors but no prices. What should the team do?</span>
+<span id="cb9-643"><a href="#cb9-643" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-644"><a href="#cb9-644" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>A. Select features by repeatedly checking the hidden test prices.</span>
+<span id="cb9-645"><a href="#cb9-645" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>B. Delete difficult test homes to reduce RMSE.</span>
+<span id="cb9-646"><a href="#cb9-646" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>C. Use in-sample training RMSE as the final test RMSE.</span>
+<span id="cb9-647"><a href="#cb9-647" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>D. Select with training-set CV, refit on training data, and submit predictions for all required test homes.</span>
+<span id="cb9-648"><a href="#cb9-648" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-649"><a href="#cb9-649" aria-hidden="true" tabindex="-1"></a><span class="fu">## Answer Key and Chinese Explanations</span></span>
+<span id="cb9-650"><a href="#cb9-650" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-651"><a href="#cb9-651" aria-hidden="true" tabindex="-1"></a>答案速查：**1 C · 2 A · 3 B · 4 D · 5 B · 6 A · 7 C · 8 D · 9 B · 10 C · 11 A · 12 D**。</span>
+<span id="cb9-652"><a href="#cb9-652" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-653"><a href="#cb9-653" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**C：实际减预测。** $280000-320000=-40000$，模型预测比实际贵，所以是高估。</span>
+<span id="cb9-654"><a href="#cb9-654" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**A：X 取 log，Y 不取 log。** 1% 的 X 变化大约对应 $\beta/100$ 美元的 Y 变化。精确值是 $210\log(1.01)=2.0896$。</span>
+<span id="cb9-655"><a href="#cb9-655" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**B：数缓冲区内的事件。** <span class="in">`st_buffer()`</span> 画圈，<span class="in">`st_intersects()`</span> 找匹配事件，<span class="in">`lengths()`</span> 数个数。660 英尺＝0.125 英里，半英里是 2,640 英尺。</span>
+<span id="cb9-656"><a href="#cb9-656" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**D：邻居平均值。** $(30-10+10)/3=10$。不能只求和，也不把自己的残差再加进去。</span>
+<span id="cb9-657"><a href="#cb9-657" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**B：相邻位置往往一起偏高或一起偏低。** Moran's I 不是误差金额或解释率；空间聚集也不直接说明是哪个变量造成的。</span>
+<span id="cb9-658"><a href="#cb9-658" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**A：位置和权重不动，残差重新分配。** 问的是：如果残差与位置没有这种关联，随机打乱后能否得到同样大或更大的 I？并不是每次重新拟合回归。</span>
+<span id="cb9-659"><a href="#cb9-659" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**C：统计显著、实际大小、预测准确性分开看。** p 值不是零假设为真的概率；样本很大时很小的空间关系也可能显著。I 不是美元。</span>
+<span id="cb9-660"><a href="#cb9-660" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>**D：权重定义变了。** 二元权重中每条边权重为 1；行标准化时，中间房子的两个邻居各占 1/2，端点的唯一邻居占 1。样本和残差不变，I 仍会变。</span>
+<span id="cb9-661"><a href="#cb9-661" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>**B：验证答案通过邻居进入特征。** 先用全体房价构造邻居均价，再分折，已经泄漏了验证集信息。本次课程要求使用空间 X，不使用邻近目标房价。</span>
+<span id="cb9-662"><a href="#cb9-662" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>**C：解决信息缺失，而不只消除报错。** 合理合并稀有类别并检查每折；只补 factor 标签无法学出不存在的街区系数。不能偷加验证价格。</span>
+<span id="cb9-663"><a href="#cb9-663" aria-hidden="true" tabindex="-1"></a><span class="ss">11. </span>**A：B 的留出误差较小，但仍有空间结构。** RMSE 衡量预测误差大小，I 衡量地理结构，两者不可互相替代。也要确认两次 I 使用同类残差和同一权重。</span>
+<span id="cb9-664"><a href="#cb9-664" aria-hidden="true" tabindex="-1"></a><span class="ss">12. </span>**D：CV 选模型，test 做最后独立检验。** 训练集上确定流程，再对全部必需测试记录预测。随意删除难预测房屋会改变评估对象，也可能违背提交要求。</span>
+<span id="cb9-665"><a href="#cb9-665" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-666"><a href="#cb9-666" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
+<span id="cb9-667"><a href="#cb9-667" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-668"><a href="#cb9-668" aria-hidden="true" tabindex="-1"></a>An error map changes the question from “Is this model accurate on average?” to</span>
+<span id="cb9-669"><a href="#cb9-669" aria-hidden="true" tabindex="-1"></a>“Who and where does this model systematically miss?” Moran's I helps formalize</span>
+<span id="cb9-670"><a href="#cb9-670" aria-hidden="true" tabindex="-1"></a>that question, but cannot replace honest validation or identify a causal</span>
+<span id="cb9-671"><a href="#cb9-671" aria-hidden="true" tabindex="-1"></a>mechanism. The practical loop is to inspect errors, propose a defensible</span>
+<span id="cb9-672"><a href="#cb9-672" aria-hidden="true" tabindex="-1"></a>feature, compare held-out performance, and document the remaining limitations.</span>
+<span id="cb9-673"><a href="#cb9-673" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-674"><a href="#cb9-674" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
+<span id="cb9-675"><a href="#cb9-675" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-676"><a href="#cb9-676" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>How much would a random-fold model deteriorate when predicting a new neighborhood</span>
+<span id="cb9-677"><a href="#cb9-677" aria-hidden="true" tabindex="-1"></a>  or a later year?</span>
+<span id="cb9-678"><a href="#cb9-678" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Can a model reduce overvaluation among cheaper homes without making average</span>
+<span id="cb9-679"><a href="#cb9-679" aria-hidden="true" tabindex="-1"></a>  dollar error worse, and which evaluation would reveal that tradeoff?</span>
+<span id="cb9-680"><a href="#cb9-680" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-681"><a href="#cb9-681" aria-hidden="true" tabindex="-1"></a><span class="fu">## Sources and Scope</span></span>
+<span id="cb9-682"><a href="#cb9-682" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-683"><a href="#cb9-683" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Dr. Elizabeth Delmelle, *Where Is the Model Wrong?*, Week 7 lecture,</span>
+<span id="cb9-684"><a href="#cb9-684" aria-hidden="true" tabindex="-1"></a>  October 16, 2026, supplied as <span class="in">`week7_slides.html`</span>.</span>
+<span id="cb9-685"><a href="#cb9-685" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Supplied classroom photo of four review questions on CV, RMSE, factor</span>
+<span id="cb9-686"><a href="#cb9-686" aria-hidden="true" tabindex="-1"></a>  coefficients, and quadratic features; summarized separately above.</span>
+<span id="cb9-687"><a href="#cb9-687" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Official documentation linked beside the relevant <span class="in">`nngeo`</span>, <span class="in">`spdep`</span>, and</span>
+<span id="cb9-688"><a href="#cb9-688" aria-hidden="true" tabindex="-1"></a>  <span class="in">`spatialreg`</span> explanations.</span>
+<span id="cb9-689"><a href="#cb9-689" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>The figures use the exact five-house teaching values and are reproducible</span>
+<span id="cb9-690"><a href="#cb9-690" aria-hidden="true" tabindex="-1"></a>  with <span class="in">`weekly-notes/assets/generate-week7-figures.R`</span>. They do not substitute</span>
+<span id="cb9-691"><a href="#cb9-691" aria-hidden="true" tabindex="-1"></a>  invented Philadelphia sales data for the missing empirical figure files.</span>
+<span id="cb9-692"><a href="#cb9-692" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Code outside “Proving R Works” is a study template requiring the named class</span>
+<span id="cb9-693"><a href="#cb9-693" aria-hidden="true" tabindex="-1"></a>  data and installed packages. The numerical check is executed during rendering.</span>
+</code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
