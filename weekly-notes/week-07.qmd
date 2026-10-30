@@ -1,6 +1,6 @@
 ---
 title: "Week 7: Spatial Errors and House Price Prediction"
-description: "Spatial features, residual maps, Moran's I, permutation tests, and honest house-price prediction, with bilingual review and practice quizzes."
+description: "Spatial features, residual maps, Moran's I, permutation tests, and honest house-price prediction."
 date: 2026-10-16
 ---
 
@@ -13,28 +13,9 @@ whether neighboring homes have similar errors. The lecture then introduced a
 Chicago house-price prediction competition with a genuinely held-out test set.
 
 The main source is Dr. Elizabeth Delmelle's *Where Is the Model Wrong?*, dated
-October 16, 2026. The supplied classroom photo contains four Week 5–6 review
-questions; those are separated from this week's new material below. Numerical
-Philadelphia results are lecture outputs, not newly downloaded or re-estimated
-sales results. The two figures here reconstruct the lecture's five-house
+October 16, 2026. Numerical Philadelphia results are lecture outputs, not
+newly downloaded or re-estimated sales results. The two figures here reconstruct the lecture's five-house
 example; the HTML's linked empirical map and scatterplot images were not supplied.
-
-## 中文复习重点
-
-**一句话：RMSE 告诉你“平均错多少”，残差地图和 Moran's I 告诉你“是不是总在某些地方一起错”。**
-
-| 重点 | 小白理解 | 最容易考错的地方 |
-|---|---|---|
-| Residual 残差 | 实际房价 − 预测房价 | 正数＝预测偏低；负数＝预测偏高 |
-| Buffer count | 以房子为圆心，数一定半径内的事件 | 660 ft 是八分之一英里，不是半英里；先检查 CRS 单位 |
-| kNN distance | 找最近的 k 个事件，计算平均距离 | 和“最近的 k 栋房子的残差平均值”不是同一个变量 |
-| Spatial lag | 我邻居的数值加权平均 | 行标准化后才是按邻居权重加总的平均，不是时间滞后 |
-| Moran's I | 相邻位置的数值是否一起偏高或一起偏低 | 不是 RMSE，也不是解释率；结果依赖邻居和权重定义 |
-| Permutation test | 位置不变，把残差重新分配，比较真实 I 是否异常 | p 小不等于效应大，更不等于证明原因 |
-| Spatial feature engineering | 把遗漏的地点信息变成 X | 可以用已知设施和环境信息，不能偷看待预测房价 |
-| CV versus test | CV 用来选模型，最后保留 test 做独立检验 | 两个 RMSE 差很大是警讯，但不一定就是泄漏 |
-
-学习顺序：先记清残差正负 → 理解“邻居平均” → 看五栋房子的手算 → 理解随机打乱检验 → 把结果用于改进特征。
 
 ## Key Concepts
 
@@ -79,9 +60,6 @@ fold, and apply the same mapping to validation and test data. If grouping or
 imputation is learned from data, learn it within the training portion; never
 use held-out outcomes to design the grouping. Around 150 neighborhoods in the
 house example make rare categories particularly relevant.
-
-中文：某个街区只有几套房，恰好全被分到验证组，训练时就没有这个街区。
-解决办法是合理合并类别、检查每一折和处理未知类别，不是反复换随机种子直到不报错。
 
 ### 2. From census tracts to individual houses
 
@@ -339,10 +317,9 @@ the spatial lag of centered residuals on centered residuals gives a slope
 equal to Moran's I. With binary weights, that equality requires the $n/S_0$
 scaling; do not read an arbitrary lag-scatter slope as I.
 
-中文：A、B 一起偏高，D、E 一起偏低，所以大多数“邻居偏差相乘”是正数。
-Moran's I 用一个数概括这种成团。它比较的是减去平均值后的偏差；这个例子的
-平均残差不是零，所以不要漏掉减均值这一步。五栋房子是教学例子，不是一个带
-截距 OLS 在全部训练样本上的完整残差集合。
+The toy example has a nonzero mean residual, so centering is essential.
+It is not the complete training-residual vector from an OLS model with an
+intercept, whose residuals would sum to zero up to numerical precision.
 
 ### 9. Interpret the statistic and test it by shuffling
 
@@ -467,10 +444,6 @@ The workflow is:
 | Model log | Every model's CV RMSE and Moran's I, with comparable definitions |
 | Failure analysis | Where errors are largest and whose homes are overvalued |
 
-Q7 on October 30 is described as asking each person about their **own team's
-model**: features and reasons, CV versus test RMSE, and the worst failures.
-Everyone must understand the whole pipeline, even if tasks are divided.
-
 A large CV/test gap is a reason to investigate leakage, overfitting to CV,
 sampling variation, distribution shift, or pipeline inconsistencies. It is not
 proof of leakage by itself, and one test score is still an estimate on one
@@ -506,161 +479,6 @@ round(c(mean_residual_thousands = mean(r),
 Expected values: mean = 16; binary I = 0.6023; row-standardized I and scatter
 slope = 0.7229; the exact 1% log-income change = $2.0896.
 
-## Classroom Photo Review
-
-The photographed questions review Weeks 5–6, rather than introduce new Week 7
-spatial statistics. Their answers are **1 C · 2 B · 3 B · 4 D**.
-
-| Photo question | Correct idea | 中文解释 |
-|---|---|---|
-| Why ten-fold CV rather than one 80/20 split? | Each record is held out once; performance uses all folds | 减少依赖某一次幸运划分；每折通常用 90% 训练，不是每折用 100%。仍受折划分影响。 |
-| CV RMSE = $14,200 for income prediction | Errors have a root-mean-square size of $14,200 | 是美元尺度的误差概括，不是 14.2% 解释率、错误记录数或平方误差之和；也不等于 MAE。 |
-| Northwest coefficient = −140, Central is reference | At the same income, Northwest predicted rent is $140 lower | 比较的是 Central，不是全市平均；没有交互时，这是截距差，不是收入斜率差。 |
-| Rent rises with income then flattens | Include income and income squared | 负二次项可使斜率在观察范围内逐渐减小。B“删掉最高收入地区”只是把真实规律删掉，没有建模解释弯曲。 |
-
-For the last question,
-$\widehat{rent}=\beta_0+\beta_1 income+\beta_2 income^2$ has slope
-$\beta_1+2\beta_2 income$. A negative $\beta_2$ allows flattening within the
-observed range, but can eventually imply a downturn outside it. `log(income)`
-is another possible shape; the photo's option C is **logging rent**, not income.
-
-## English Multiple Choice Quiz
-
-These are practice questions based on Week 7, not confirmed exam questions.
-Each has one best answer. 先做题，后看答案和中文解析。
-
-### Q1. Reading a residual
-
-A home sells for $280,000 and the model predicts $320,000. What is its residual?
-
-- A. +$40,000; the model underpredicts.
-- B. −$40,000; the model underpredicts.
-- C. −$40,000; the model overpredicts.
-- D. +$40,000; the model overpredicts.
-
-### Q2. Reading a logged predictor
-
-In `rent ~ log(income)`, the log-income coefficient is 210 and rent is in dollars.
-A 1% income increase is associated with approximately:
-
-- A. $2.10 more rent.
-- B. $210 more rent.
-- C. 210% more rent.
-- D. 1% more rent.
-
-### Q3. Buffer counts
-
-House coordinates use a projected CRS in US survey feet. What does
-`lengths(st_intersects(st_buffer(houses, 660), incidents))` return?
-
-- A. The nearest incident's distance in meters.
-- B. The number of incidents within each house's 660-foot buffer.
-- C. The average price of the five nearest houses.
-- D. The number of incidents within half a mile of each house.
-
-### Q4. Spatial lag
-
-A house has three equally weighted neighbors with residuals of +30, −10, and
-+10 thousand dollars. What is its row-standardized spatial lag?
-
-- A. +30 thousand dollars.
-- B. −10 thousand dollars.
-- C. +50 thousand dollars.
-- D. +10 thousand dollars.
-
-### Q5. Positive Moran's I
-
-A residual Moran's I is clearly above its random-labeling baseline. What is the
-best interpretation?
-
-- A. The model's RMSE is necessarily low.
-- B. Nearby houses tend to have similar centered residuals.
-- C. The model has proved that crime causes house prices.
-- D. The model explains I percent of the variance in prices.
-
-### Q6. Permutation testing
-
-What does `moran.mc(residuals, weights, nsim = 499)` randomize?
-
-- A. The observed residual values across the fixed locations.
-- B. The geographic coordinates of every house.
-- C. The units of the response variable.
-- D. The observed prices by fitting 499 new regression models.
-
-### Q7. Small p-values
-
-The lecture reports I = 0.2605 and p = 0.002. Which statement is most appropriate?
-
-- A. There is a 0.2% probability that the null hypothesis is true.
-- B. The model's price predictions are wrong by 0.2605 dollars.
-- C. The chosen test detects positive clustering; magnitude and prediction error still matter.
-- D. Neighborhood amenities have been established as the cause.
-
-### Q8. Comparing weights
-
-Why can the five-house example give I = 0.6023 with binary weights and I = 0.7229
-with row-standardized weights?
-
-- A. Row standardization changes the sale prices.
-- B. One of the calculations must be a software bug.
-- C. The sample contains different houses in each calculation.
-- D. The relative contributions of neighbors change, especially at the chain's ends.
-
-### Q9. Data leakage
-
-Which feature construction most directly leaks held-out target information?
-
-- A. Distance from each home to a known train station.
-- B. Mean neighboring sale price computed using all prices before CV splitting.
-- C. A buffer count of events known before the prediction date.
-- D. House age computed from a recorded construction year.
-
-### Q10. New factor levels
-
-A validation fold contains a neighborhood absent from its training fold. What
-is the best response?
-
-- A. Assign an arbitrary coefficient of zero and report no limitation.
-- B. Add validation prices to the training set.
-- C. Use a documented category strategy and verify coverage and unseen-level handling.
-- D. Treat the error as proof that all categorical predictors are useless.
-
-### Q11. Honest model comparison
-
-Two models use the same rows and folds. A has CV RMSE $60,000 and residual I 0.01;
-B has CV RMSE $45,000 and residual I 0.10. Which conclusion is supported?
-
-- A. B predicts more accurately by this RMSE, but its remaining spatial pattern deserves investigation.
-- B. A must be preferred because Moran's I is the only prediction metric.
-- C. Neither result can be interpreted without a significant coefficient p-value.
-- D. B cannot be used because positive I proves leakage.
-
-### Q12. A real test set
-
-The Chicago test file has predictors but no prices. What should the team do?
-
-- A. Select features by repeatedly checking the hidden test prices.
-- B. Delete difficult test homes to reduce RMSE.
-- C. Use in-sample training RMSE as the final test RMSE.
-- D. Select with training-set CV, refit on training data, and submit predictions for all required test homes.
-
-## Answer Key and Chinese Explanations
-
-答案速查：**1 C · 2 A · 3 B · 4 D · 5 B · 6 A · 7 C · 8 D · 9 B · 10 C · 11 A · 12 D**。
-
-1. **C：实际减预测。** $280000-320000=-40000$，模型预测比实际贵，所以是高估。
-2. **A：X 取 log，Y 不取 log。** 1% 的 X 变化大约对应 $\beta/100$ 美元的 Y 变化。精确值是 $210\log(1.01)=2.0896$。
-3. **B：数缓冲区内的事件。** `st_buffer()` 画圈，`st_intersects()` 找匹配事件，`lengths()` 数个数。660 英尺＝0.125 英里，半英里是 2,640 英尺。
-4. **D：邻居平均值。** $(30-10+10)/3=10$。不能只求和，也不把自己的残差再加进去。
-5. **B：相邻位置往往一起偏高或一起偏低。** Moran's I 不是误差金额或解释率；空间聚集也不直接说明是哪个变量造成的。
-6. **A：位置和权重不动，残差重新分配。** 问的是：如果残差与位置没有这种关联，随机打乱后能否得到同样大或更大的 I？并不是每次重新拟合回归。
-7. **C：统计显著、实际大小、预测准确性分开看。** p 值不是零假设为真的概率；样本很大时很小的空间关系也可能显著。I 不是美元。
-8. **D：权重定义变了。** 二元权重中每条边权重为 1；行标准化时，中间房子的两个邻居各占 1/2，端点的唯一邻居占 1。样本和残差不变，I 仍会变。
-9. **B：验证答案通过邻居进入特征。** 先用全体房价构造邻居均价，再分折，已经泄漏了验证集信息。本次课程要求使用空间 X，不使用邻近目标房价。
-10. **C：解决信息缺失，而不只消除报错。** 合理合并稀有类别并检查每折；只补 factor 标签无法学出不存在的街区系数。不能偷加验证价格。
-11. **A：B 的留出误差较小，但仍有空间结构。** RMSE 衡量预测误差大小，I 衡量地理结构，两者不可互相替代。也要确认两次 I 使用同类残差和同一权重。
-12. **D：CV 选模型，test 做最后独立检验。** 训练集上确定流程，再对全部必需测试记录预测。随意删除难预测房屋会改变评估对象，也可能违背提交要求。
-
 ## Reflection
 
 An error map changes the question from “Is this model accurate on average?” to
@@ -680,8 +498,6 @@ feature, compare held-out performance, and document the remaining limitations.
 
 - Dr. Elizabeth Delmelle, *Where Is the Model Wrong?*, Week 7 lecture,
   October 16, 2026, supplied as `week7_slides.html`.
-- Supplied classroom photo of four review questions on CV, RMSE, factor
-  coefficients, and quadratic features; summarized separately above.
 - Official documentation linked beside the relevant `nngeo`, `spdep`, and
   `spatialreg` explanations.
 - The figures use the exact five-house teaching values and are reproducible

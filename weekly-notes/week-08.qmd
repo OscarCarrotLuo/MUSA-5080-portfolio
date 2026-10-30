@@ -1,6 +1,6 @@
 ---
 title: "Week 8: LISA, Spatial Features, and Algorithmic Rent Setting"
-description: "Bilingual notes on local Moran's I, honest spatial validation, RealPage and the RFP, plus current Assignment 5 review and 18 practice questions."
+description: "Local Moran's I, spatial feature engineering, model evaluation, and the governance of algorithmic rent recommendations."
 date: 2026-10-23
 ---
 
@@ -20,27 +20,6 @@ were consulted for coverage, not treated as authoritative answers.
 The supplied HTML refers to a Philadelphia LISA map whose image file was not
 included. The figures below therefore reconstruct the numerical teaching
 example and the lecture's comparison table—not the missing empirical map.
-The Assignment 5 section describes the current **NS** submission on October
-29, 2026, not an earlier m10 version or the Philadelphia lecture model.
-
-## 中文复习重点
-
-**一句话：先看模型错多少，再看在哪里一起错，最后问这种错误和模型的使用方式会伤害谁。**
-
-| 核心概念 | 小白理解 | 考试陷阱 |
-|---|---|---|
-| Global Moran's I | 整张地图的相邻数值是否相似 | 不能告诉你具体哪一块有问题 |
-| Local Moran's I / LISA | 一栋房子与它邻居的偏差是否一起高或低 | 大的正数既可能 HH，也可能 LL |
-| HH / LL | 自己和邻居都在平均残差的同一侧 | High/Low 相对平均值，不一定相对零 |
-| HL / LH | 自己和邻居在平均残差的不同侧 | 是空间离群候选，不是自动的数据错误 |
-| Permutation p-value | 这种邻居组合在随机情况下有多不寻常 | p 小不代表误差金额大，也不证明原因 |
-| OOF residual | 用没训练过这条记录的模型计算误差 | 不是全样本拟合后的训练残差 |
-| Feature engineering | 把“附近”变成可计算、预测时可得的 X | 不可使用验证/测试房价或邻居残差泄漏答案 |
-| Equity audit | 比较不同地区、收入组是否持续被高估 | 总体 RMSE 下降，不保证各组都改善 |
-| Governance | 谁提供数据、谁决策、谁承担后果 | 准确率高也不能自动证明系统合法或公平 |
-
-学习顺序：残差正负 → 定义邻居 → 中心化和邻居平均 → Local I → 显著性 →
-提出可验证的新特征 → 固定验证条件重新比较 → 检查公平性与使用规则。
 
 ## Key Concepts
 
@@ -138,9 +117,9 @@ $I_B=64\times44/4584=0.6143$.
 For C, it is $(64-66)/2=-1$, so $I_C=-4/4584\approx-0.0009$.
 The slide rounds C to 0.00; its unrounded sign is slightly negative.
 
-中文：先看自己偏离平均多少，再看邻居平均偏离多少；同号相乘为正，异号为负。
-最后除以全体偏差的共同尺度，才能比较不同位置。Local I 可以大于 1，
-所以 A 的 1.1728 和 E 的 1.2382 并不是算错了。
+Local I is not an ordinary correlation coefficient bounded by -1 and +1.
+The values above 1 for A and E are valid under this normalization; statistical
+significance still requires a separate test.
 
 #### Connection to last week's 5/8 and 0.7229
 
@@ -211,8 +190,9 @@ What a small p-value does and does not say:
 - More simulations improve p-value resolution and stability. Neither more
   simulations nor a stricter threshold fixes a poorly chosen neighbor rule.
 
-不显著的意思是“按当前检验，没有足够证据标出它”，不是“证明没有空间结构”。
-同样，显著也不是“找到原因了”。
+A nonsignificant result means insufficient evidence under the chosen test,
+not proof that spatial structure is absent. Significance does not identify
+a cause.
 
 ### 6. Honest workflow: out-of-fold residuals first
 
@@ -490,126 +470,11 @@ These are exercise facts, not real contract commitments.
 | R7 | Neighborhood benchmarks against other consortium members | Avoid exposing rivals' sensitive behavior; consider public or own-history benchmarks |
 | R8 | Strict secrecy beyond legally required disclosures | Preserve lawful oversight, independent audit and clear accountability |
 
-These are suggested design judgments, not the professor's official answer
-key. A strong pitch explains the red line, the alternative product, remaining
-uncertainty, and conditions of delivery—not merely “we will be ethical.”
+These design choices require explicit justification. A strong proposal explains
+the red line, the alternative product, remaining uncertainty, and conditions
+of delivery—not merely “we will be ethical.”
 Public-facing defensibility and winning the client's revenue-based score may
 not select the same proposal.
-
-## Connection to Assignment 5: the current North/South model
-
-### A. What the assignment is testing
-
-Predict **Chicago house sale prices**, then explain the model and audit its
-errors. It is not the Philadelphia lecture's rent model. A convincing workflow
-combines structural attributes, spatial features, honest CV, residual spatial
-diagnostics, subgroup checks, and a complete test prediction file.
-
-The current working report is `MUSA-PPA-assignment/assign5.qmd`. The numbers
-below were checked against its saved `model_log.csv` and `model_comparison.csv`
-on October 29, 2026. They are recorded run results, not a fresh rerun here.
-
-- Supplied training rows: **23,200**; retained analysis rows: **21,968**.
-  The 1,232 exclusions are flagged multi-parcel sales, not a blanket deletion
-  of expensive houses. The configured low-price/invalid-area/coordinate
-  screens removed no additional rows in this supplied sample.
-- All **5,789 test rows** remain, including flagged multi-parcel observations.
-  Training exclusions do not justify losing requested test IDs.
-- The same fixed **10 folds**, seed 5080, group identical coordinates together.
-  Models use identical rows and five-neighbor row-standardized weights.
-- Imputation medians are learned inside each training fold. Predictors do not
-  use held-out prices, neighboring prices, or residuals.
-
-### B. Why each feature family matters
-
-| Feature family | Examples in this submission | Reason and caution |
-|---|---|---|
-| Structure | Building area, age, beds/baths, garage, AC, basement | Basic property differences; coefficients are conditional associations |
-| Nonlinearity | Building-area², age², log lot area | Allows changing slopes; still linear in coefficients |
-| Time | Sale year and quarter | Captures observed period differences, not guaranteed future trends |
-| Location | Downtown distance and its square, east/north coordinates, Ward | Allows systematic geographic differences |
-| Interactions | Building area × Ward, building area × age | Allows a feature's slope to differ by location or age |
-| Crime exposure | 660-ft count, mean distance to five robberies, logs, coverage flag | Uses exposure before sale; missing data coverage is not zero crime |
-| Final NS adjustment | North/South indicator + log lot × zone | Allows a different baseline and lot-area slope across the boundary |
-
-The final **NS model is one OLS model**, not two separately fitted regional
-models. Its boundary is `north_mi = 0` relative to the downtown reference.
-With South as an illustrative reference, an interaction has the form:
-
-$$\hat y=\cdots+\beta_L\log(lot)+\beta_N North+
-\beta_{LN}\log(lot)\times North.$$
-
-South's log-lot slope is $\beta_L$; North's is
-$\beta_L+\beta_{LN}$. Their price difference at a particular lot size is
-$\beta_N+\beta_{LN}\log(lot)$, **not always just $\beta_N$**. Check the actual
-factor reference level before interpreting fitted coefficients.
-
-### C. Accuracy, spatial clustering, and implausible predictions
-
-| Saved model | Mean-fold CV RMSE ($) | Pooled OOF RMSE ($) | Residual Moran's I | Negative test predictions |
-|---|---:|---:|---:|---:|
-| m1: structural baseline | 281,468 | 282,189 | 0.3773 | 34 |
-| m10: previous full model | 181,295 | 182,182 | 0.1710 | 12 |
-| NS: selected final model | **179,512** | **180,385** | **0.1642** | **2** |
-| E3: Ward-specific lot slope | 175,758 | 176,527 | 0.1451 | 6 |
-
-NS improves mean-fold RMSE by about **0.98% versus m10** and **36.22% versus
-m1**. Positive residual spatial structure remains; 0.1642 is not “16.42% of
-variance explained.” Significance requires a separate test.
-
-E3 has a lower CV RMSE than NS, but a test prediction near **−$901,194**.
-NS was chosen as a simpler geographic adjustment with fewer implausible
-predictions, not because it won every numeric metric. Its minimum test
-prediction is still about **−$42,817**; two negative predictions remain and
-are disclosed. Test plausibility checks are not test-label accuracy checks.
-Silently clipping negatives after selection is not the same evaluated model;
-a clipping rule should be prespecified/evaluated consistently and documented.
-
-Why two RMSE numbers?
-
-$$RMSE_{mean-fold}=\frac1K\sum_{k=1}^K\sqrt{MSE_k},$$
-
-$$RMSE_{pooled}=\sqrt{\frac{\sum_k n_k MSE_k}{\sum_k n_k}}.$$
-
-Average-of-square-roots and square-root-of-average are different. Label the
-quantity, units and folds. **Neither is hidden-test RMSE**: test sale prices
-are unavailable before instructor scoring.
-
-### D. Accuracy is not fairness
-
-The valuation ratio is:
-
-$$ratio=\hat y/y.$$
-
-For an actual $200,000 sale predicted at $240,000, the ratio is 1.20 (20%
-overvaluation), while the residual is −$40,000. These are two descriptions of
-the same direction of error.
-
-| Low-income group diagnostic | m10 | NS |
-|---|---:|---:|
-| Median valuation ratio | 1.1324 | **1.1462** |
-| Share with ratio > 1 | 57.94% | **58.37%** |
-
-The median ratio rises from about 13.24% to 14.62% above 1 despite a lower
-overall RMSE. That is an equity warning, not a contradiction. Dollar RMSE
-places more weight on large dollar errors; proportional error can tell a
-different story. This does not establish causal discrimination or calculate
-actual property taxes. ACS tract income is an area-level proxy.
-
-### E. Leakage and submission checks
-
-Crime features use a preceding completed quarter ending at least seven days
-before sale. Early periods outside available crime coverage are marked and
-imputed rather than presented as verified zero crime. Timestamp filtering
-alone cannot prove the source was available in that form historically; later
-revisions remain a point-in-time availability caveat. ACS 2023 income is used
-for **retrospective equity diagnostics**, not as an early-sale predictor.
-
-Final export checks: exactly 5,789 requested IDs in the original order,
-no duplicates, no missing/nonfinite predictions, and the expected column
-names. The current submission retains its two negative outputs rather than
-silently altering the evaluated rule. No assignment model or prediction file
-was changed to make these notes.
 
 ## Proving R Works
 
@@ -635,219 +500,6 @@ knitr::kable(data.frame(House = names(e), Residual = e, Deviation = z,
              row.names = FALSE)
 data.frame(Global_row_standardized = global_I, Global_binary = binary_I)
 ```
-
-## English Multiple Choice Quiz
-
-These are **practice questions**, not leaked or confirmed exam questions.
-Questions 1–12 focus on Week 8; 13–18 apply the ideas to Assignment 5.
-
-### Q1. Global versus local
-
-What does local Moran's I add to a global Moran's I analysis?
-
-A. It proves which omitted variable caused the errors.  
-B. It identifies candidate locations of clusters and spatial outliers.  
-C. It replaces the need for out-of-fold predictions.  
-D. It measures the dollar size of every prediction error.
-
-### Q2. Row standardization
-
-A house has four equally weighted neighbors. After row standardization, what
-weight does each neighbor receive?
-
-A. 4  
-B. 1  
-C. 0.25  
-D. 0, because weights must sum to zero.
-
-### Q3. A local calculation
-
-For house B, z = 64, the neighbors' centered values are 84 and 4, and
-m2 = 4,584. What is B's local Moran's I under row-standardized weights?
-
-A. 64 × 44 / 4,584 ≈ 0.6143  
-B. 64 × 88 / 4,584 ≈ 1.2286  
-C. 44 / 64 ≈ 0.6875  
-D. 4,584 / 64 ≈ 71.625
-
-### Q4. Positive local I
-
-A significantly positive local Moran's I can describe which patterns?
-
-A. HH only  
-B. LL only  
-C. HL and LH  
-D. Both HH and LL
-
-### Q5. Centering matters
-
-A house has residual +20. Its neighbors' average residual is +15, while the
-overall mean residual is +16. Which statement is correct?
-
-A. It is LL because 15 is smaller than 20.  
-B. It is descriptively HL, although the house and its neighbors are underpredicted on average.  
-C. It is HH because both raw residuals are positive.  
-D. It must be a statistically significant outlier.
-
-### Q6. Significance
-
-A house lies in the HH quadrant but has local permutation p = 0.24. At
-alpha = 0.01, what should the significance-filtered map show?
-
-A. A statistically significant HH cluster  
-B. Proof that its residual is zero  
-C. Not significant under this test and threshold  
-D. A causal effect of neighborhood income
-
-### Q7. Out-of-fold residuals
-
-Which residual is appropriate for evaluating held-out predictive performance?
-
-A. Actual price minus a prediction from a model trained without that row's fold  
-B. Actual price minus a prediction from a model fitted on every row  
-C. Actual price minus its neighbor's actual price  
-D. The mean training residual for its Ward
-
-### Q8. A nearest-feature result
-
-What does `st_nearest_feature(homes, crime)` return?
-
-A. The number of crimes in each buffer  
-B. The average distance to five crimes  
-C. Distances in miles regardless of CRS  
-D. Indices of the nearest crime features
-
-### Q9. Fixed radius versus fixed k
-
-Which statement best contrasts a 660-ft buffer count with the mean distance
-to five nearest crimes?
-
-A. Both always use the same search radius.  
-B. The buffer fixes distance; the kNN feature fixes the number of events.  
-C. Both measure neighbors' average residuals.  
-D. Neither depends on spatial units.
-
-### Q10. Reading the vacancy experiment
-
-After adding vacancy, CV RMSE falls from $432,287 to $431,883, while
-significant LL homes increase from 536 to 705. What is the strongest conclusion?
-
-A. Vacancy caused all LL errors.  
-B. The new model solved the low-income overvaluation problem.  
-C. Average error improved slightly, but the reported LL count did not shrink.  
-D. The LISA calculations must be wrong because RMSE decreased.
-
-### Q11. Multiple testing
-
-Why be cautious when testing local Moran's I for thousands of houses?
-
-A. Many tests create opportunities for false positives; a raw local threshold is not map-wide error control.  
-B. A p-value is always the probability a house is incorrectly priced.  
-C. Multiple testing makes every I value equal to zero.  
-D. Using 499 simulations eliminates all false positives.
-
-### Q12. RealPage and governance
-
-Which question most directly goes beyond predictive accuracy?
-
-A. Whether the model uses a polynomial term  
-B. Whether the programming language is R  
-C. Whether the training plot has a fitted line  
-D. Whether rivals' confidential data and default-acceptance rules facilitate coordination
-
-### Q13. Two RMSE summaries
-
-Why can mean-fold CV RMSE differ from pooled OOF RMSE?
-
-A. One must secretly be training R-squared.  
-B. Averaging fold square roots differs from taking a square root after pooling squared errors.  
-C. Pooled OOF RMSE uses hidden test labels.  
-D. RMSE has no units, so its values are arbitrary.
-
-### Q14. Regional interaction
-
-In `price ~ log_lot + North + log_lot:North`, with North coded 0/1,
-what is the log-lot slope for North = 1?
-
-A. The coefficient of North alone  
-B. The interaction coefficient alone  
-C. The log_lot coefficient plus the interaction coefficient  
-D. Zero, because the model is linear
-
-### Q15. An equity counterexample
-
-NS lowers overall CV RMSE, but the low-income group's median predicted/actual
-ratio increases from 1.1324 to 1.1462. What does this illustrate?
-
-A. Better overall accuracy can coexist with worse subgroup overvaluation.  
-B. Lower RMSE guarantees fairness, so the ratios must be ignored.  
-C. The residuals must all be positive.  
-D. The model has proved income causes prediction errors.
-
-### Q16. Model selection
-
-Why was NS selected even though E3 had a lower recorded CV RMSE?
-
-A. NS had the lowest value on every metric.  
-B. E3's hidden test RMSE was known to be higher.  
-C. NS removed all spatial autocorrelation and all negative predictions.  
-D. Selection also considered complexity and implausible predictions, including E3's extreme negative output.
-
-### Q17. A training-only transformation
-
-How should median imputation be performed during cross-validation?
-
-A. Use the complete training-plus-test dataset for the most stable median.  
-B. Learn each median from the analysis/training fold and apply it to its validation fold.  
-C. Use each validation outcome to decide its predictor value.  
-D. Replace every missing predictor by its full-data mean after CV.
-
-### Q18. Submission and test accuracy
-
-Which statement is correct for the current Assignment 5 submission?
-
-A. Drop test rows that resemble excluded training rows.  
-B. The recorded $179,512 CV RMSE is confirmed hidden-test RMSE.  
-C. Preserve all 5,789 requested test rows and do not claim test RMSE without test outcomes.  
-D. Reorder IDs by predicted price without restoring submission order.
-
-## Answer Key and Chinese Explanations
-
-| Question | Answer | 中文解析 |
-|---|---|---|
-| 1 | B | Global 看总体，Local 帮你定位。定位不是证明因果，也不能替代预测验证。 |
-| 2 | C | 每一行除以 4，四个邻居各 1/4，行和为 1。不是总表所有元素加起来为 1。 |
-| 3 | A | 邻居平均为 (84+4)/2=44；B 误把平均写成和。64×44/4584≈0.6143。 |
-| 4 | D | 正×正和负×负都为正，所以 HH、LL 都可能显著正相关；还要看象限才能区分。 |
-| 5 | B | 自己中心化为 4，邻居为 −1，因此 HL。但两边原始残差仍为正，均表示低估。未给 p 值不能判断显著。 |
-| 6 | C | 0.24 不小于 0.01，因此不标显著。不是证明空间独立，也不是说没有误差。 |
-| 7 | A | 预测这一行的模型没有用这一折训练，才模拟对未见数据的表现。B 是训练内残差。 |
-| 8 | D | 返回行号/索引，再用 st_distance 才得到距离；数字 17 不是 17 英尺。 |
-| 9 | B | 固定半径内事件数可以变化；固定 5 个事件需要寻找的距离可以变化。 |
-| 10 | C | RMSE 只下降 404 美元，LL 反而多 169 栋。平均指标与局部指标不必同方向。 |
-| 11 | A | 做很多检验会增加偶然显著的机会。报告校正方式和敏感性，不把局部 1% 当整张地图 1%。 |
-| 12 | D | 数据来源、竞争者共享和采纳规则决定社会/法律风险；精确预测并不能回答这些问题。 |
-| 13 | B | 开平方是非线性操作，先平均还是先开方顺序不同；折大小也可能不同。两者都不是隐藏测试集分数。 |
-| 14 | C | North=1 时，两个包含 log_lot 的项相加，斜率为 β_loglot+β_interaction。North 主效应改变基线。 |
-| 15 | A | 总体美元损失下降可以与某组比例性高估变差并存；不能只挑一个好看的指标。 |
-| 16 | D | E3 的 CV 更低，但极端负预测暴露稳定性问题；NS 也仍有两条负预测，因此 C 错。 |
-| 17 | B | 验证折的分布不应参与学习填补值；每折先训练填补规则，再用于验证数据。 |
-| 18 | C | 训练清洗与测试交付是两回事。测试答案未知，不能把 CV RMSE 改名叫 test RMSE。 |
-
-### Three likely short-answer prompts
-
-1. **Explain why a local Moran's I of 1.2 is not automatically an error.**
-   Local I is not a correlation coefficient bounded by ±1. Its sign and size
-   depend on centered values, neighbor weights and the normalization; assess
-   significance separately.
-2. **Propose one new feature after finding LL residual clusters.**
-   State a mechanism (e.g., omitted disamenities), construct a predictor using
-   information available before prediction, compare fixed-fold OOF errors and
-   spatial/subgroup diagnostics, and avoid making a causal claim from the map.
-3. **Defend the NS model while admitting its limitations.**
-   Cite the improved mean-fold RMSE and smaller residual I, explain the
-   regional lot-area interaction, and disclose remaining negative predictions,
-   subgroup overvaluation and selection-on-CV uncertainty.
 
 ## Reflection
 
@@ -885,10 +537,4 @@ model still needs defensible data use, decision rules and accountability.
   [DOJ case docket](https://www.justice.gov/atr/case/us-and-plaintiff-states-v-realpage-inc),
   and [Philadelphia City Council's bill-passage notice](https://phlcouncil.com/councilmember-orourkes-algorithmic-rental-price-fixing-ban-passes-council-heads-to-mayor-parkers-desk/).
   Status was checked October 29, 2026; this is not legal advice.
-- Assignment 5: current local `MUSA-PPA-assignment/assign5.qmd`, saved
-  `data/assignment5/model_log.csv` and `model_comparison.csv`, checked October
-  29, 2026. Only aggregate learning points are included; no private row-level
-  records, model files or test predictions are republished here.
 - Figures are reproducible with [week08-figures.R](assets/week08-figures.R).
-  Practice questions and Chinese explanations were newly written for review;
-  they are not an official examination or answer key.
