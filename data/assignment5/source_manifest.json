@@ -1,0 +1,83 @@
+{
+  "source_repository": "https://github.com/CyannnZ/MUSA-PPA-assignment",
+  "source_commit": "d85d8b55097d859dbf5ee353af54958415758e99",
+  "source_report": "assign5.qmd",
+  "portfolio_report": "assignments/assignment5.qmd",
+  "adaptations": [
+    "Project-relative data, reference and prediction paths",
+    "Portfolio listing description and fixed publication date",
+    "Prediction CSV download link"
+  ],
+  "inputs": [
+    {
+      "source": "chicago_train.csv",
+      "portfolio": "data/assignment5/chicago_train.csv",
+      "source_sha256": "b288bcd3ad45c58d84aa5f6e71617de8cdaa58bb5bcf828fce7211b0f2637ff0"
+    },
+    {
+      "source": "chicago_test.csv",
+      "portfolio": "data/assignment5/chicago_test.csv",
+      "source_sha256": "b946dbfa25871ff51a26c984703293cf13f991e7390068b0f994b12a65ddb012"
+    },
+    {
+      "source": "data/assignment5/wards_2023.rds",
+      "portfolio": "data/assignment5/wards_2023.rds",
+      "source_sha256": "4a465296bc30243f7d162ea697f29c3aaf65c4a72e7aeb15a3270a47543e9d4a"
+    },
+    {
+      "source": "data/assignment5/acs_2023_tracts.rds",
+      "portfolio": "data/assignment5/acs_2023_tracts.rds",
+      "source_sha256": "5344fa7bff563e3d437bee68c336aa7294eb5db79ee873e4918b0dde51026433"
+    },
+    {
+      "source": "data/assignment5/robbery_2023_2025.csv",
+      "portfolio": "data/assignment5/robbery_2023_2025.csv",
+      "source_sha256": "631bf194b0309fd75c80be23cfd5717ababef32f0f70ca2431bf269be0a59147"
+    },
+    {
+      "source": "data/assignment5/robbery_query.txt",
+      "portfolio": "data/assignment5/robbery_query.txt",
+      "source_sha256": "5f0ca6bf44a7174d2bcab53fb14b9c5419909e0534c51f03e3efb45e1c4cedb7"
+    },
+    {
+      "source": "data/assignment5/model_specifications.csv",
+      "portfolio": "data/assignment5/model_specifications.csv",
+      "source_sha256": "04fa5635f7b323e7022105afe31c68b4cda8162bb734f60d12b6834416b006d1"
+    },
+    {
+      "source": "data/assignment5/prepare_features.R",
+      "portfolio": "data/assignment5/prepare_features.R",
+      "source_sha256": "8ac55394d4bd4d9cd9580faf5307b58dcbab52a3c7a643150ab7f9e8a4ff1e2f"
+    },
+    {
+      "source": "data/assignment5/fit_models.R",
+      "portfolio": "data/assignment5/fit_models.R",
+      "source_sha256": "3454a04c94601f722584978724304d9e840e0f21a9136563981d41b6207ef064"
+    },
+    {
+      "source": "data/assignment5/fit_final_models.R",
+      "portfolio": "data/assignment5/fit_final_models.R",
+      "source_sha256": "a898447100c6a46f20d359fc51f9a996aff35d14df61d6b50a653dc59c613622"
+    },
+    {
+      "source": "data/assignment5/verify_model.R",
+      "portfolio": "data/assignment5/verify_model.R",
+      "source_sha256": "30c0f6f7cf0f5899745f37d17665a64ad40cfcdccddd743edb62d04a02bba318"
+    },
+    {
+      "source": "references/original_m10/model_results.rds",
+      "portfolio": "data/assignment5/references/original_m10/model_results.rds",
+      "source_sha256": "ec0daf8bd30e9cad0149950282e2103ad6957bd07ed006af66a8e8e88844fb7c"
+    },
+    {
+      "source": "experiments/north_south_lot/results/out_of_fold_comparison.csv",
+      "portfolio": "data/assignment5/references/north_south_lot/out_of_fold_comparison.csv",
+      "source_sha256": "5429a6a2697a3c26ae035c9ee78d3669d94063468c0d9901db05de9471cf16be"
+    },
+    {
+      "source": "experiments/north_south_lot/results/candidate_predictions.csv",
+      "portfolio": "data/assignment5/references/north_south_lot/candidate_predictions.csv",
+      "source_sha256": "f3c7a8f5c34839eed915a4bf8e6e13043e7e316b498748ad9ef8f5c5a0bbfdd4"
+    }
+  ]
+}

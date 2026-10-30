@@ -2,6 +2,8 @@ project:
   type: website
   output-dir: docs
   execute-dir: project
+  resources:
+    - data/assignment5/team_Mahjong_predictions.csv
 
 website:
   title: "Oscar Luo - MUSA 5080 Portfolio"        # <-- CHANGE THIS
