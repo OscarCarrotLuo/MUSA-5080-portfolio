@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-11-06">
+<meta name="description" content="Testing a burglary model on unseen districts, interpreting odds ratios, and choosing a classification threshold.">
+
+<title>Week 10: Geographic Cross-Validation and Logistic Regression – Oscar Luo - MUSA 5080 Portfolio</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-9d96f532d65220ca877c0304385df42f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Portfolio</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html">
+<span class="menu-text">Home</span></a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+<span class="menu-text">About</span></a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../weekly-notes/index.html">
+<span class="menu-text">Weekly Notes</span></a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../assignments/index.html">
+<span class="menu-text">Assignments</span></a>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/OscarCarrotLuo/MUSA-5080-portfolio"> <i class="bi bi-github" role="img">
+</i>
+<span class="menu-text"></span></a>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+
+  <ul>
+  <li><a href="#what-we-did" id="toc-what-we-did" class="nav-link active" data-scroll-target="#what-we-did">What We Did</a></li>
+  <li><a href="#key-concepts" id="toc-key-concepts" class="nav-link" data-scroll-target="#key-concepts">Key Concepts</a></li>
+  <li><a href="#notes" id="toc-notes" class="nav-link" data-scroll-target="#notes">Notes</a>
+  <ul class="collapse">
+  <li><a href="#what-a-geographic-fold-holds-out" id="toc-what-a-geographic-fold-holds-out" class="nav-link" data-scroll-target="#what-a-geographic-fold-holds-out">1. What a geographic fold holds out</a></li>
+  <li><a href="#what-the-broward-county-outcome-measures" id="toc-what-the-broward-county-outcome-measures" class="nav-link" data-scroll-target="#what-the-broward-county-outcome-measures">2. What the Broward County outcome measures</a></li>
+  <li><a href="#probability-odds-and-log-odds" id="toc-probability-odds-and-log-odds" class="nav-link" data-scroll-target="#probability-odds-and-log-odds">3. Probability, odds, and log-odds</a></li>
+  <li><a href="#a-line-on-one-scale-and-a-curve-on-another" id="toc-a-line-on-one-scale-and-a-curve-on-another" class="nav-link" data-scroll-target="#a-line-on-one-scale-and-a-curve-on-another">4. A line on one scale and a curve on another</a></li>
+  <li><a href="#three-readings-of-one-coefficient" id="toc-three-readings-of-one-coefficient" class="nav-link" data-scroll-target="#three-readings-of-one-coefficient">5. Three readings of one coefficient</a></li>
+  <li><a href="#a-threshold-turns-a-probability-into-a-label" id="toc-a-threshold-turns-a-probability-into-a-label" class="nav-link" data-scroll-target="#a-threshold-turns-a-probability-into-a-label">6. A threshold turns a probability into a label</a></li>
+  <li><a href="#two-exercises-two-different-populations" id="toc-two-exercises-two-different-populations" class="nav-link" data-scroll-target="#two-exercises-two-different-populations">7. Two exercises, two different populations</a></li>
+  </ul></li>
+  <li><a href="#proving-r-works" id="toc-proving-r-works" class="nav-link" data-scroll-target="#proving-r-works">Proving R Works</a></li>
+  <li><a href="#reflection" id="toc-reflection" class="nav-link" data-scroll-target="#reflection">Reflection</a></li>
+  <li><a href="#questions-i-still-have" id="toc-questions-i-still-have" class="nav-link" data-scroll-target="#questions-i-still-have">Questions I Still Have</a></li>
+  <li><a href="#sources-and-scope" id="toc-sources-and-scope" class="nav-link" data-scroll-target="#sources-and-scope">Sources and Scope</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Week 10: Geographic Cross-Validation and Logistic Regression</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+</div>
+
+<div>
+  <div class="description">
+    Testing a burglary model on unseen districts, interpreting odds ratios, and choosing a classification threshold.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 6, 2026</p>
+    </div>
+  </div>
+
+
+  </div>
+
+
+
+</header>
+
+
+<section id="what-we-did" class="level2">
+<h2 class="anchored" data-anchor-id="what-we-did">What We Did</h2>
+<p>We asked two different questions. Can a burglary model trained in some police districts predict counts in a district it has never seen? And when a model estimates a person’s probability of rearrest, how does that probability become a decision?</p>
+<p>The first exercise changes <strong>how we test a count model</strong>. The second changes <strong>the unit and outcome</strong>: one person, one observed 0 or 1. A threshold then converts an estimated probability into a label. Moving the threshold does not refit the model or change what happened to anyone.</p>
+</section>
+<section id="key-concepts" class="level2">
+<h2 class="anchored" data-anchor-id="key-concepts">Key Concepts</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Task</th>
+<th>One row</th>
+<th>Outcome</th>
+<th>Model output</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>House-price prediction</td>
+<td>House</td>
+<td>Sale price</td>
+<td>Expected price in dollars (OLS)</td>
+</tr>
+<tr class="even">
+<td>Burglary prediction</td>
+<td>Grid cell</td>
+<td>Recorded incident count</td>
+<td>Expected count (Poisson with log link)</td>
+</tr>
+<tr class="odd">
+<td>Two-year rearrest</td>
+<td>Person</td>
+<td>Recorded rearrest: yes/no</td>
+<td>Probability of recorded rearrest (logistic)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes" class="level2">
+<h2 class="anchored" data-anchor-id="notes">Notes</h2>
+<section id="what-a-geographic-fold-holds-out" class="level3">
+<h3 class="anchored" data-anchor-id="what-a-geographic-fold-holds-out">1. What a geographic fold holds out</h3>
+<p>Randomly assigning individual grid cells to folds often puts a test cell next to several training cells. The cells may share environmental conditions, burglary patterns, and nearly identical distances to last year’s hotspot. Good results on random folds can therefore overstate performance <strong>when the real task is transfer to a new district</strong>. This is dependence between nearby observations; it need not mean that someone literally copied the test label into a predictor.</p>
+<p>In leave-one-district-out CV, an entire district becomes the test fold. Fit a new Poisson model on the other districts, predict counts for the held-out cells, and repeat until each district has served as the test district once. This reduces geographic mixing but does not guarantee independence across district boundaries. A future-year forecast requires a time holdout as well.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Starting objects from the burglary exercise: one row per cell in fishnet,</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># and police district polygons in the same projected CRS.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>cell_district <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_centroid</span>(fishnet) <span class="sc">|&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_join</span>(dplyr<span class="sc">::</span><span class="fu">select</span>(police_districts, <span class="at">district =</span> dist_num)) <span class="sc">|&gt;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(cell_id, district)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># A centroid usually resolves cells crossing a district boundary.</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Investigate duplicate matches (boundary point / overlapping polygons).</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">anyDuplicated</span>(cell_district<span class="sc">$</span>cell_id))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(fishnet, cell_district, <span class="at">by =</span> <span class="st">"cell_id"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">is.na</span>(cells<span class="sc">$</span>district))  <span class="co"># check exclusions before filtering</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(cells, <span class="sc">!</span><span class="fu">is.na</span>(district)) <span class="sc">|&gt;</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>()</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>cv_results <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_dfr</span>(<span class="fu">unique</span>(cells<span class="sc">$</span>district), <span class="cf">function</span>(d) {</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  train <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(cells, district <span class="sc">!=</span> d)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  test  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(cells, district <span class="sc">==</span> d)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(burglaries <span class="sc">~</span> cars_cnt <span class="sc">+</span> log_light_nn1 <span class="sc">+</span> log_graffiti_nn3 <span class="sc">+</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>               loop_mi <span class="sc">+</span> dist_hotspot, <span class="at">family =</span> <span class="fu">poisson</span>(), <span class="at">data =</span> train)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">district =</span> d, <span class="at">n_cells =</span> <span class="fu">nrow</span>(test),</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>             <span class="at">mae =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test<span class="sc">$</span>burglaries <span class="sc">-</span> pred)))</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For district <span class="math inline">\(d\)</span>, <span class="math inline">\(\mathrm{MAE}_d=\sum_{i\in d}|y_i-\hat y_i|/n_d\)</span>. An MAE of 0.8 would mean a miss of 0.8 recorded incidents per cell on average, in either direction. Join the scores back to the polygons to see <em>where</em> the model struggles. Read MAE alongside the number of cells: one unusual cell can move the average in a small fold. An average over districts gives each district equal weight; an average over all test cells weights districts by their cell counts. The lecture supplies the mapping code but no numerical district ranking or held-out comparison with KDE.</p>
+</section>
+<section id="what-the-broward-county-outcome-measures" class="level3">
+<h3 class="anchored" data-anchor-id="what-the-broward-county-outcome-measures">2. What the Broward County outcome measures</h3>
+<p>The second exercise uses <a href="https://github.com/propublica/compas-analysis">ProPublica’s Broward County COMPAS analysis data</a>. The lecture uses screenings from 2013–14 and a two-year outcome. After filtering, 2,809 of 6,172 people had a recorded rearrest (45.5%). A new arrest is an administrative record, not proof of a new offense. Prior records also reflect earlier policing and justice-system contact.</p>
+<p>The classroom regression uses age, prior count, a male indicator, a felony-charge indicator, and a total of three juvenile-record counts. It is a new model fitted to the public data, not the proprietary COMPAS scoring algorithm. Omitting race as a predictor does not establish that features, outcomes, or error rates are free from bias.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"https://raw.githubusercontent.com/propublica/compas-analysis/"</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>            <span class="st">"master/compas-scores-two-years.csv"</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># The public CSV repeats priors_count; keep the first name and suffix duplicates.</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>compas <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(u, <span class="at">name_repair =</span> make.unique, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">between</span>(days_b_screening_arrest, <span class="sc">-</span><span class="dv">30</span>, <span class="dv">30</span>),</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>         is_recid <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>, c_charge_degree <span class="sc">!=</span> <span class="st">"O"</span>, score_text <span class="sc">!=</span> <span class="st">"N/A"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">male =</span> <span class="fu">as.integer</span>(sex <span class="sc">==</span> <span class="st">"Male"</span>),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">felony =</span> <span class="fu">as.integer</span>(c_charge_degree <span class="sc">==</span> <span class="st">"F"</span>),</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">juv_total =</span> juv_fel_count <span class="sc">+</span> juv_misd_count <span class="sc">+</span> juv_other_count)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>recid_fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(two_year_recid <span class="sc">~</span> age <span class="sc">+</span> priors_count <span class="sc">+</span> male <span class="sc">+</span> felony <span class="sc">+</span> juv_total,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>), <span class="at">data =</span> compas)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="probability-odds-and-log-odds" class="level3">
+<h3 class="anchored" data-anchor-id="probability-odds-and-log-odds">3. Probability, odds, and log-odds</h3>
+<p>If 80 of 100 people experience an event, its probability is <span class="math inline">\(80/100=0.8\)</span>, but its odds are <span class="math inline">\(80/20=4\)</span>, or four events for each non-event. The denominator changes. In this lecture, “positive” means that a rearrest was recorded.</p>
+<p><span class="math display">\[
+o=\frac{p}{1-p},\qquad p=\frac{o}{1+o},\qquad
+\eta=\log(o),\qquad p=\frac{1}{1+e^{-\eta}}.
+\]</span></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Probability</th>
+<th style="text-align: right;">Odds</th>
+<th style="text-align: right;">Log-odds (natural log)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">1/9</td>
+<td style="text-align: right;">−2.197</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.80</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1.386</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">2.197</td>
+</tr>
+</tbody>
+</table>
+<p>Probability 0.455 gives odds around 0.835: about 84 recorded rearrests <strong>per 100 people without a rearrest</strong>, not 84 per 100 people overall. Complementary probabilities have reciprocal odds and opposite log-odds.</p>
+</section>
+<section id="a-line-on-one-scale-and-a-curve-on-another" class="level3">
+<h3 class="anchored" data-anchor-id="a-line-on-one-scale-and-a-curve-on-another">4. A line on one scale and a curve on another</h3>
+<p>With a binary outcome, an unconstrained OLS line can predict a probability above 1 or below 0. Logistic regression puts the linear predictor on an unrestricted scale:</p>
+<p><span class="math display">\[
+\log\left(\frac{p_i}{1-p_i}\right)=\beta_0+\beta_1x_{i1}+\cdots=\eta_i.
+\]</span></p>
+<p>The inverse logit maps any finite <span class="math inline">\(\eta_i\)</span> into <span class="math inline">\((0,1)\)</span>. The predicted probability is steepest as a function of <span class="math inline">\(\eta\)</span> near <span class="math inline">\(p=0.5\)</span> and flatter near either end. An individual outcome is still 0 or 1: a predicted probability of 0.78 does not mean a person was “0.78 rearrested.” The binomial model describes the variation in those binary outcomes. Maximum likelihood chooses coefficients that give the observed sequence of zeros and ones the greatest likelihood. Ordinary OLS <span class="math inline">\(R^2\)</span> is not the objective being optimized.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-logit" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Log-odds of minus two, zero, and two correspond to probabilities near 0.12, 0.50, and 0.88.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-logit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="week-10_files/figure-html/fig-logit-1.png" class="img-fluid figure-img" alt="Log-odds of minus two, zero, and two correspond to probabilities near 0.12, 0.50, and 0.88." width="633">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-logit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The inverse-logit function. At zero log-odds, the event and non-event are equally likely. This is the mathematical link, not an empirical rearrest curve.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(recid_fit, <span class="at">type =</span> <span class="st">"link"</span>)       <span class="co"># eta; the default; may be negative</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(recid_fit, <span class="at">type =</span> <span class="st">"response"</span>)   <span class="co"># p; a probability</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">coef</span>(recid_fit))                    <span class="co"># coefficient multipliers on the odds</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For Week 9’s Poisson model, response-scale predictions are <em>expected counts</em>. For Week 10’s binomial model, they are <em>probabilities</em>. The same R argument requests the outcome scale of the particular model. <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/predict.glm.html">R documentation: predict.glm</a></p>
+</section>
+<section id="three-readings-of-one-coefficient" class="level3">
+<h3 class="anchored" data-anchor-id="three-readings-of-one-coefficient">5. Three readings of one coefficient</h3>
+<p>For one additional prior record, holding the other predictors fixed:</p>
+<ol type="1">
+<li><strong>Log-odds:</strong> add approximately 0.160.</li>
+<li><strong>Odds:</strong> multiply by <span class="math inline">\(e^{0.160}\approx1.17\)</span>, roughly 17% higher odds.</li>
+<li><strong>Probability:</strong> start at the person’s original probability. If <span class="math inline">\(r\)</span> is the odds ratio, the new probability is <span class="math inline">\(p'=rp/(1-p+rp)\)</span>. There is no single percentage-point change that applies to everyone.</li>
+</ol>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 36%">
+<col style="width: 36%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Predictor change (others fixed)</th>
+<th style="text-align: right;">Rounded log-odds coefficient</th>
+<th style="text-align: right;">Approximate odds ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>One more year of age</td>
+<td style="text-align: right;">−0.044</td>
+<td style="text-align: right;">0.96</td>
+</tr>
+<tr class="even">
+<td>One more prior</td>
+<td style="text-align: right;">0.160</td>
+<td style="text-align: right;">1.17</td>
+</tr>
+<tr class="odd">
+<td>Male indicator: 0 to 1</td>
+<td style="text-align: right;">0.328</td>
+<td style="text-align: right;">1.39</td>
+</tr>
+<tr class="even">
+<td>Felony-charge indicator: 0 to 1</td>
+<td style="text-align: right;">0.229</td>
+<td style="text-align: right;">1.26</td>
+</tr>
+<tr class="odd">
+<td>One more juvenile record</td>
+<td style="text-align: right;">0.135</td>
+<td style="text-align: right;">1.14</td>
+</tr>
+</tbody>
+</table>
+<p>For age, OR 0.96 means about <strong>4% lower odds per additional year</strong>, not four percentage points lower probability. These are adjusted associations, not estimates of what would happen if someone intervened on a predictor.</p>
+<p>The slides compare two male profiles, both with a felony charge, no juvenile records, and a change from zero to one prior. At age 22 the displayed probability moves from 0.488 to 0.528 (<strong>+4.0 percentage points</strong>); at age 50 it moves from 0.218 to 0.246 (<strong>+2.8 points</strong>). A refit of the linked CSV gives 0.490 to 0.530 and 0.221 to 0.249 respectively. The distinction does not depend on the small discrepancy: the same odds multiplier moves probability further near the steep middle of the curve.</p>
+</section>
+<section id="a-threshold-turns-a-probability-into-a-label" class="level3">
+<h3 class="anchored" data-anchor-id="a-threshold-turns-a-probability-into-a-label">6. A threshold turns a probability into a label</h3>
+<p>At threshold <span class="math inline">\(t\)</span>, flag a person if <span class="math inline">\(\hat p\ge t\)</span>. Someone at 0.40 is flagged at 0.30 but not at 0.50. No model parameter, probability, or observed outcome changed. The label changed because the decision rule changed. A threshold of 0.50 has no special claim to being optimal, even when the event rate is close to one half.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Predicted label</th>
+<th>Actual event: yes</th>
+<th>Actual event: no</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Positive / flagged</td>
+<td>TP</td>
+<td>FP</td>
+</tr>
+<tr class="even">
+<td>Negative / not flagged</td>
+<td>FN</td>
+<td>TN</td>
+</tr>
+</tbody>
+</table>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Measure</th>
+<th>Formula</th>
+<th>Among whom?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sensitivity / recall</td>
+<td>TP / (TP + FN)</td>
+<td>Among actual positives, how many did we flag?</td>
+</tr>
+<tr class="even">
+<td>Specificity</td>
+<td>TN / (TN + FP)</td>
+<td>Among actual negatives, how many did we leave unflagged?</td>
+</tr>
+<tr class="odd">
+<td>Precision</td>
+<td>TP / (TP + FP)</td>
+<td>Among those flagged, how many actually had the event?</td>
+</tr>
+<tr class="even">
+<td>Accuracy</td>
+<td>(TP + TN) / N</td>
+<td>Among everyone, how many labels matched?</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="two-exercises-two-different-populations" class="level3">
+<h3 class="anchored" data-anchor-id="two-exercises-two-different-populations">7. Two exercises, two different populations</h3>
+<p><strong>Quarantine exercise, 40 cards.</strong> A red dot represents illness, and a star identifies the severe variant. There are 16 positives and 24 negatives. Results below use the same cards and scores at every threshold.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">TP</th>
+<th style="text-align: right;">FP</th>
+<th style="text-align: right;">FN</th>
+<th style="text-align: right;">TN</th>
+<th style="text-align: right;">Sensitivity</th>
+<th style="text-align: right;">Specificity</th>
+<th style="text-align: right;">Precision</th>
+<th style="text-align: right;">Accuracy</th>
+<th style="text-align: right;">Stars caught</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">.30</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">.875</td>
+<td style="text-align: right;">.458</td>
+<td style="text-align: right;">.519</td>
+<td style="text-align: right;">.625</td>
+<td style="text-align: right;">3/4</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">.50</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">.625</td>
+<td style="text-align: right;">.750</td>
+<td style="text-align: right;">.625</td>
+<td style="text-align: right;">.700</td>
+<td style="text-align: right;">2/4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">.70</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">.438</td>
+<td style="text-align: right;">.917</td>
+<td style="text-align: right;">.778</td>
+<td style="text-align: right;">.725</td>
+<td style="text-align: right;">1/4</td>
+</tr>
+</tbody>
+</table>
+<p>At .70, accuracy is highest <strong>among the three displayed thresholds</strong>, but the rule misses nine sick people and three of the four severe cases. At .50, precision and sensitivity are both .625 only because FP and FN happen to be equal. At .30 their denominators differ: <span class="math inline">\(14/16\)</span> versus <span class="math inline">\(14/27\)</span>.</p>
+<p><strong>Broward exercise, 6,172 people.</strong> The following counts reproduce the lecture’s fitted-sample example. They describe the model’s labels against observed rearrests, not a held-out estimate or a forecast of the effect of detention.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Flagged</th>
+<th style="text-align: right;">TP</th>
+<th style="text-align: right;">FP</th>
+<th style="text-align: right;">FN</th>
+<th style="text-align: right;">TN</th>
+<th style="text-align: right;">Sensitivity</th>
+<th style="text-align: right;">Specificity</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">.30</td>
+<td style="text-align: right;">4,843</td>
+<td style="text-align: right;">2,527</td>
+<td style="text-align: right;">2,316</td>
+<td style="text-align: right;">282</td>
+<td style="text-align: right;">1,047</td>
+<td style="text-align: right;">.90</td>
+<td style="text-align: right;">.31</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">.50</td>
+<td style="text-align: right;">2,264</td>
+<td style="text-align: right;">1,551</td>
+<td style="text-align: right;">713</td>
+<td style="text-align: right;">1,258</td>
+<td style="text-align: right;">2,650</td>
+<td style="text-align: right;">.55</td>
+<td style="text-align: right;">.79</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">.70</td>
+<td style="text-align: right;">710</td>
+<td style="text-align: right;">563</td>
+<td style="text-align: right;">147</td>
+<td style="text-align: right;">2,246</td>
+<td style="text-align: right;">3,216</td>
+<td style="text-align: right;">.20</td>
+<td style="text-align: right;">.96</td>
+</tr>
+</tbody>
+</table>
+<p>Compare .30 with .70: raising the threshold avoids <strong>2,169 false positives</strong> but adds <strong>1,964 false negatives</strong>. At .70, specificity .96 means 96% of people without a recorded rearrest were left unflagged. It does <em>not</em> mean that 96% of flagged people were rearrested; the latter fraction is <span class="math inline">\(563/710\approx79.3\%\)</span>.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-threshold" class="quarto-float quarto-figure quarto-figure-center anchored" alt="False positives fall from 2,316 to 147 and false negatives rise from 282 to 2,246 as the threshold rises.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-threshold-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="week-10_files/figure-html/fig-threshold-1.png" class="img-fluid figure-img" alt="False positives fall from 2,316 to 147 and false negatives rise from 282 to 2,246 as the threshold rises." width="633">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-threshold-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Broward fitted sample: the same probabilities, classified at three cutoffs. Counts are people, not percentages.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="proving-r-works" class="level2">
+<h2 class="anchored" data-anchor-id="proving-r-works">Proving R Works</h2>
+<p>This calculation starts with one lecture row rather than individual records. Keeping the denominators visible helps distinguish a false alarm from a missed event.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>tp <span class="ot">&lt;-</span> <span class="dv">1551</span>; fp <span class="ot">&lt;-</span> <span class="dv">713</span>; fn <span class="ot">&lt;-</span> <span class="dv">1258</span>; tn <span class="ot">&lt;-</span> <span class="dv">2650</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">sensitivity =</span> tp<span class="sc">/</span>(tp<span class="sc">+</span>fn), <span class="at">specificity =</span> tn<span class="sc">/</span>(tn<span class="sc">+</span>fp),</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">precision =</span> tp<span class="sc">/</span>(tp<span class="sc">+</span>fp), <span class="at">accuracy =</span> (tp<span class="sc">+</span>tn)<span class="sc">/</span>(tp<span class="sc">+</span>fp<span class="sc">+</span>fn<span class="sc">+</span>tn)), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>sensitivity specificity   precision    accuracy
+      0.552       0.788       0.685       0.681 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In a binomial GLM, adding one coefficient to the log-odds translates back as:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">plogis</span>(<span class="fu">qlogis</span>(<span class="fu">c</span>(<span class="fl">0.488</span>, <span class="fl">0.218</span>)) <span class="sc">+</span> <span class="fl">0.160</span>), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.528 0.247</code></pre>
+</div>
+</div>
+<p>To get the same orientation from individual predictions in R:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">predict</span>(recid_fit, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">predicted =</span> <span class="fu">as.integer</span>(p_hat <span class="sc">&gt;=</span> <span class="fl">0.50</span>), <span class="at">actual =</span> compas<span class="sc">$</span>two_year_recid)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># R prints 0 before 1: find the row/column labels before reading any cell.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="reflection" class="level2">
+<h2 class="anchored" data-anchor-id="reflection">Reflection</h2>
+<p>Choosing a threshold amounts to choosing which mistakes an institution is more willing to make. A false positive in a detention program can cost someone their freedom. A false positive in a voluntary support program may instead mean offering services, though resources and access still matter. The lecture contrasts a higher threshold (or questioning the use of the model) for a punitive decision with a lower threshold for offering support. Neither the fitted probabilities nor overall accuracy can decide whether a program is justified.</p>
+</section>
+<section id="questions-i-still-have" class="level2">
+<h2 class="anchored" data-anchor-id="questions-i-still-have">Questions I Still Have</h2>
+<ul>
+<li>Would the burglary model rank differently against a historical baseline on the same held-out districts?</li>
+<li>How would error rates change on a different cohort, and who would bear the errors at the proposed cutoff?</li>
+</ul>
+</section>
+<section id="sources-and-scope" class="level2">
+<h2 class="anchored" data-anchor-id="sources-and-scope">Sources and Scope</h2>
+<p>MUSA 5080, <em>Geographic CV + Logistic Regression I</em>, November 6, 2026; <a href="https://github.com/propublica/compas-analysis">ProPublica data and methodology</a>. The figures use the inverse-logit formula and the threshold counts from the slides. The original slide image files were not included. The slides preview the ROC curve for next week; they do not report a Week 10 ROC/AUC result.</p>
+
+
+<!-- -->
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button,
+          { trigger: "manual",
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const cellDetails = window.document.querySelectorAll(".cell details.code-fold");
+        for (let i=0; i<cellDetails.length; i++) {
+          const details = cellDetails[i];
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell div.sourceCode.cell-code");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          }
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config);
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined;
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              }
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            }
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 10: Geographic Cross-Validation and Logistic Regression"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Testing a burglary model on unseen districts, interpreting odds ratios, and choosing a classification threshold."</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-11-06</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>We asked two different questions. Can a burglary model trained in some police districts predict counts in a district it has never seen? And when a model estimates a person's probability of rearrest, how does that probability become a decision?</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>The first exercise changes **how we test a count model**. The second changes **the unit and outcome**: one person, one observed 0 or 1. A threshold then converts an estimated probability into a label. Moving the threshold does not refit the model or change what happened to anyone.</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Task <span class="pp">|</span> One row <span class="pp">|</span> Outcome <span class="pp">|</span> Model output <span class="pp">|</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> House-price prediction <span class="pp">|</span> House <span class="pp">|</span> Sale price <span class="pp">|</span> Expected price in dollars (OLS) <span class="pp">|</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Burglary prediction <span class="pp">|</span> Grid cell <span class="pp">|</span> Recorded incident count <span class="pp">|</span> Expected count (Poisson with log link) <span class="pp">|</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Two-year rearrest <span class="pp">|</span> Person <span class="pp">|</span> Recorded rearrest: yes/no <span class="pp">|</span> Probability of recorded rearrest (logistic) <span class="pp">|</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="fu">## Notes</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="fu">### 1. What a geographic fold holds out</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>Randomly assigning individual grid cells to folds often puts a test cell next to several training cells. The cells may share environmental conditions, burglary patterns, and nearly identical distances to last year's hotspot. Good results on random folds can therefore overstate performance **when the real task is transfer to a new district**. This is dependence between nearby observations; it need not mean that someone literally copied the test label into a predictor.</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>In leave-one-district-out CV, an entire district becomes the test fold. Fit a new Poisson model on the other districts, predict counts for the held-out cells, and repeat until each district has served as the test district once. This reduces geographic mixing but does not guarantee independence across district boundaries. A future-year forecast requires a time holdout as well.</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Starting objects from the burglary exercise: one row per cell in fishnet,</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co"># and police district polygons in the same projected CRS.</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>cell_district <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_centroid</span>(fishnet) <span class="sc">|&gt;</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_join</span>(dplyr<span class="sc">::</span><span class="fu">select</span>(police_districts, <span class="at">district =</span> dist_num)) <span class="sc">|&gt;</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(cell_id, district)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co"># A centroid usually resolves cells crossing a district boundary.</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Investigate duplicate matches (boundary point / overlapping polygons).</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">anyDuplicated</span>(cell_district<span class="sc">$</span>cell_id))</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(fishnet, cell_district, <span class="at">by =</span> <span class="st">"cell_id"</span>)</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">is.na</span>(cells<span class="sc">$</span>district))  <span class="co"># check exclusions before filtering</span></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(cells, <span class="sc">!</span><span class="fu">is.na</span>(district)) <span class="sc">|&gt;</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>()</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>cv_results <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_dfr</span>(<span class="fu">unique</span>(cells<span class="sc">$</span>district), <span class="cf">function</span>(d) {</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  train <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(cells, district <span class="sc">!=</span> d)</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>  test  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(cells, district <span class="sc">==</span> d)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(burglaries <span class="sc">~</span> cars_cnt <span class="sc">+</span> log_light_nn1 <span class="sc">+</span> log_graffiti_nn3 <span class="sc">+</span></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>               loop_mi <span class="sc">+</span> dist_hotspot, <span class="at">family =</span> <span class="fu">poisson</span>(), <span class="at">data =</span> train)</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">district =</span> d, <span class="at">n_cells =</span> <span class="fu">nrow</span>(test),</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>             <span class="at">mae =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test<span class="sc">$</span>burglaries <span class="sc">-</span> pred)))</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>For district $d$, $\mathrm{MAE}_d=\sum_{i\in d}|y_i-\hat y_i|/n_d$. An MAE of 0.8 would mean a miss of 0.8 recorded incidents per cell on average, in either direction. Join the scores back to the polygons to see *where* the model struggles. Read MAE alongside the number of cells: one unusual cell can move the average in a small fold. An average over districts gives each district equal weight; an average over all test cells weights districts by their cell counts. The lecture supplies the mapping code but no numerical district ranking or held-out comparison with KDE.</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="fu">### 2. What the Broward County outcome measures</span></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>The second exercise uses <span class="co">[</span><span class="ot">ProPublica's Broward County COMPAS analysis data</span><span class="co">](https://github.com/propublica/compas-analysis)</span>. The lecture uses screenings from 2013–14 and a two-year outcome. After filtering, 2,809 of 6,172 people had a recorded rearrest (45.5%). A new arrest is an administrative record, not proof of a new offense. Prior records also reflect earlier policing and justice-system contact.</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>The classroom regression uses age, prior count, a male indicator, a felony-charge indicator, and a total of three juvenile-record counts. It is a new model fitted to the public data, not the proprietary COMPAS scoring algorithm. Omitting race as a predictor does not establish that features, outcomes, or error rates are free from bias.</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"https://raw.githubusercontent.com/propublica/compas-analysis/"</span>,</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>            <span class="st">"master/compas-scores-two-years.csv"</span>)</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a><span class="co"># The public CSV repeats priors_count; keep the first name and suffix duplicates.</span></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>compas <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(u, <span class="at">name_repair =</span> make.unique, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">between</span>(days_b_screening_arrest, <span class="sc">-</span><span class="dv">30</span>, <span class="dv">30</span>),</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>         is_recid <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>, c_charge_degree <span class="sc">!=</span> <span class="st">"O"</span>, score_text <span class="sc">!=</span> <span class="st">"N/A"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">male =</span> <span class="fu">as.integer</span>(sex <span class="sc">==</span> <span class="st">"Male"</span>),</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>         <span class="at">felony =</span> <span class="fu">as.integer</span>(c_charge_degree <span class="sc">==</span> <span class="st">"F"</span>),</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>         <span class="at">juv_total =</span> juv_fel_count <span class="sc">+</span> juv_misd_count <span class="sc">+</span> juv_other_count)</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>recid_fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(two_year_recid <span class="sc">~</span> age <span class="sc">+</span> priors_count <span class="sc">+</span> male <span class="sc">+</span> felony <span class="sc">+</span> juv_total,</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>                 <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>), <span class="at">data =</span> compas)</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a><span class="fu">### 3. Probability, odds, and log-odds</span></span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>If 80 of 100 people experience an event, its probability is $80/100=0.8$, but its odds are $80/20=4$, or four events for each non-event. The denominator changes. In this lecture, “positive” means that a rearrest was recorded.</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>o=\frac{p}{1-p},\qquad p=\frac{o}{1+o},\qquad</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>\eta=\log(o),\qquad p=\frac{1}{1+e^{-\eta}}.</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Probability <span class="pp">|</span> Odds <span class="pp">|</span> Log-odds (natural log) <span class="pp">|</span></span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|---:|---:|---:|</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.10 <span class="pp">|</span> 1/9 <span class="pp">|</span> −2.197 <span class="pp">|</span></span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.50 <span class="pp">|</span> 1 <span class="pp">|</span> 0 <span class="pp">|</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.80 <span class="pp">|</span> 4 <span class="pp">|</span> 1.386 <span class="pp">|</span></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.90 <span class="pp">|</span> 9 <span class="pp">|</span> 2.197 <span class="pp">|</span></span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>Probability 0.455 gives odds around 0.835: about 84 recorded rearrests **per 100 people without a rearrest**, not 84 per 100 people overall. Complementary probabilities have reciprocal odds and opposite log-odds.</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a><span class="fu">### 4. A line on one scale and a curve on another</span></span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>With a binary outcome, an unconstrained OLS line can predict a probability above 1 or below 0. Logistic regression puts the linear predictor on an unrestricted scale:</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>\log\left(\frac{p_i}{1-p_i}\right)=\beta_0+\beta_1x_{i1}+\cdots=\eta_i.</span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>The inverse logit maps any finite $\eta_i$ into $(0,1)$. The predicted probability is steepest as a function of $\eta$ near $p=0.5$ and flatter near either end. An individual outcome is still 0 or 1: a predicted probability of 0.78 does not mean a person was “0.78 rearrested.” The binomial model describes the variation in those binary outcomes. Maximum likelihood chooses coefficients that give the observed sequence of zeros and ones the greatest likelihood. Ordinary OLS $R^2$ is not the objective being optimized.</span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-logit</span></span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: false</span></span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 6.6</span></span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 3.5</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-alt: "Log-odds of minus two, zero, and two correspond to probabilities near 0.12, 0.50, and 0.88."</span></span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "The inverse-logit function. At zero log-odds, the event and non-event are equally likely. This is the mathematical link, not an empirical rearrest curve."</span></span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>curve_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">eta =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">5</span>, <span class="dv">5</span>, <span class="at">length.out =</span> <span class="dv">201</span>))</span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a>pts <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">eta =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(curve_data, <span class="fu">aes</span>(eta, <span class="fu">plogis</span>(eta))) <span class="sc">+</span></span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> .<span class="dv">5</span>, <span class="at">color =</span> <span class="st">"grey65"</span>, <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#205879"</span>, <span class="at">linewidth =</span> <span class="fl">1.15</span>) <span class="sc">+</span></span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> pts, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">"#205879"</span>) <span class="sc">+</span></span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">data =</span> pts, <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"%.2f"</span>, <span class="fu">plogis</span>(eta))),</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>            <span class="at">nudge_x =</span> <span class="sc">-</span>.<span class="dv">37</span>, <span class="at">nudge_y =</span> .<span class="dv">065</span>, <span class="at">size =</span> <span class="fl">3.9</span>) <span class="sc">+</span></span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">25</span>)) <span class="sc">+</span></span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Linear predictor (log-odds)"</span>, <span class="at">y =</span> <span class="st">"Predicted probability"</span>) <span class="sc">+</span></span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">13</span>)</span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(recid_fit, <span class="at">type =</span> <span class="st">"link"</span>)       <span class="co"># eta; the default; may be negative</span></span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(recid_fit, <span class="at">type =</span> <span class="st">"response"</span>)   <span class="co"># p; a probability</span></span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">coef</span>(recid_fit))                    <span class="co"># coefficient multipliers on the odds</span></span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>For Week 9's Poisson model, response-scale predictions are *expected counts*. For Week 10's binomial model, they are *probabilities*. The same R argument requests the outcome scale of the particular model. <span class="co">[</span><span class="ot">R documentation: predict.glm</span><span class="co">](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/predict.glm.html)</span></span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a><span class="fu">### 5. Three readings of one coefficient</span></span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a>For one additional prior record, holding the other predictors fixed:</span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Log-odds:** add approximately 0.160.</span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Odds:** multiply by $e^{0.160}\approx1.17$, roughly 17% higher odds.</span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Probability:** start at the person's original probability. If $r$ is the odds ratio, the new probability is $p'=rp/(1-p+rp)$. There is no single percentage-point change that applies to everyone.</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Predictor change (others fixed) <span class="pp">|</span> Rounded log-odds coefficient <span class="pp">|</span> Approximate odds ratio <span class="pp">|</span></span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|</span></span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> One more year of age <span class="pp">|</span> −0.044 <span class="pp">|</span> 0.96 <span class="pp">|</span></span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> One more prior <span class="pp">|</span> 0.160 <span class="pp">|</span> 1.17 <span class="pp">|</span></span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Male indicator: 0 to 1 <span class="pp">|</span> 0.328 <span class="pp">|</span> 1.39 <span class="pp">|</span></span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Felony-charge indicator: 0 to 1 <span class="pp">|</span> 0.229 <span class="pp">|</span> 1.26 <span class="pp">|</span></span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> One more juvenile record <span class="pp">|</span> 0.135 <span class="pp">|</span> 1.14 <span class="pp">|</span></span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a>For age, OR 0.96 means about **4% lower odds per additional year**, not four percentage points lower probability. These are adjusted associations, not estimates of what would happen if someone intervened on a predictor.</span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a>The slides compare two male profiles, both with a felony charge, no juvenile records, and a change from zero to one prior. At age 22 the displayed probability moves from 0.488 to 0.528 (**+4.0 percentage points**); at age 50 it moves from 0.218 to 0.246 (**+2.8 points**). A refit of the linked CSV gives 0.490 to 0.530 and 0.221 to 0.249 respectively. The distinction does not depend on the small discrepancy: the same odds multiplier moves probability further near the steep middle of the curve.</span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a><span class="fu">### 6. A threshold turns a probability into a label</span></span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a>At threshold $t$, flag a person if $\hat p\ge t$. Someone at 0.40 is flagged at 0.30 but not at 0.50. No model parameter, probability, or observed outcome changed. The label changed because the decision rule changed. A threshold of 0.50 has no special claim to being optimal, even when the event rate is close to one half.</span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Predicted label <span class="pp">|</span> Actual event: yes <span class="pp">|</span> Actual event: no <span class="pp">|</span></span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Positive / flagged <span class="pp">|</span> TP <span class="pp">|</span> FP <span class="pp">|</span></span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Negative / not flagged <span class="pp">|</span> FN <span class="pp">|</span> TN <span class="pp">|</span></span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Measure <span class="pp">|</span> Formula <span class="pp">|</span> Among whom? <span class="pp">|</span></span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Sensitivity / recall <span class="pp">|</span> TP / (TP + FN) <span class="pp">|</span> Among actual positives, how many did we flag? <span class="pp">|</span></span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Specificity <span class="pp">|</span> TN / (TN + FP) <span class="pp">|</span> Among actual negatives, how many did we leave unflagged? <span class="pp">|</span></span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Precision <span class="pp">|</span> TP / (TP + FP) <span class="pp">|</span> Among those flagged, how many actually had the event? <span class="pp">|</span></span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Accuracy <span class="pp">|</span> (TP + TN) / N <span class="pp">|</span> Among everyone, how many labels matched? <span class="pp">|</span></span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a><span class="fu">### 7. Two exercises, two different populations</span></span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>**Quarantine exercise, 40 cards.** A red dot represents illness, and a star identifies the severe variant. There are 16 positives and 24 negatives. Results below use the same cards and scores at every threshold.</span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Threshold <span class="pp">|</span> TP <span class="pp">|</span> FP <span class="pp">|</span> FN <span class="pp">|</span> TN <span class="pp">|</span> Sensitivity <span class="pp">|</span> Specificity <span class="pp">|</span> Precision <span class="pp">|</span> Accuracy <span class="pp">|</span> Stars caught <span class="pp">|</span></span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a><span class="pp">|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|</span></span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> .30 <span class="pp">|</span> 14 <span class="pp">|</span> 13 <span class="pp">|</span> 2 <span class="pp">|</span> 11 <span class="pp">|</span> .875 <span class="pp">|</span> .458 <span class="pp">|</span> .519 <span class="pp">|</span> .625 <span class="pp">|</span> 3/4 <span class="pp">|</span></span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> .50 <span class="pp">|</span> 10 <span class="pp">|</span> 6 <span class="pp">|</span> 6 <span class="pp">|</span> 18 <span class="pp">|</span> .625 <span class="pp">|</span> .750 <span class="pp">|</span> .625 <span class="pp">|</span> .700 <span class="pp">|</span> 2/4 <span class="pp">|</span></span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> .70 <span class="pp">|</span> 7 <span class="pp">|</span> 2 <span class="pp">|</span> 9 <span class="pp">|</span> 22 <span class="pp">|</span> .438 <span class="pp">|</span> .917 <span class="pp">|</span> .778 <span class="pp">|</span> .725 <span class="pp">|</span> 1/4 <span class="pp">|</span></span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a>At .70, accuracy is highest **among the three displayed thresholds**, but the rule misses nine sick people and three of the four severe cases. At .50, precision and sensitivity are both .625 only because FP and FN happen to be equal. At .30 their denominators differ: $14/16$ versus $14/27$.</span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a>**Broward exercise, 6,172 people.** The following counts reproduce the lecture's fitted-sample example. They describe the model's labels against observed rearrests, not a held-out estimate or a forecast of the effect of detention.</span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Threshold <span class="pp">|</span> Flagged <span class="pp">|</span> TP <span class="pp">|</span> FP <span class="pp">|</span> FN <span class="pp">|</span> TN <span class="pp">|</span> Sensitivity <span class="pp">|</span> Specificity <span class="pp">|</span></span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a><span class="pp">|---:|---:|---:|---:|---:|---:|---:|---:|</span></span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> .30 <span class="pp">|</span> 4,843 <span class="pp">|</span> 2,527 <span class="pp">|</span> 2,316 <span class="pp">|</span> 282 <span class="pp">|</span> 1,047 <span class="pp">|</span> .90 <span class="pp">|</span> .31 <span class="pp">|</span></span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> .50 <span class="pp">|</span> 2,264 <span class="pp">|</span> 1,551 <span class="pp">|</span> 713 <span class="pp">|</span> 1,258 <span class="pp">|</span> 2,650 <span class="pp">|</span> .55 <span class="pp">|</span> .79 <span class="pp">|</span></span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> .70 <span class="pp">|</span> 710 <span class="pp">|</span> 563 <span class="pp">|</span> 147 <span class="pp">|</span> 2,246 <span class="pp">|</span> 3,216 <span class="pp">|</span> .20 <span class="pp">|</span> .96 <span class="pp">|</span></span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>Compare .30 with .70: raising the threshold avoids **2,169 false positives** but adds **1,964 false negatives**. At .70, specificity .96 means 96% of people without a recorded rearrest were left unflagged. It does *not* mean that 96% of flagged people were rearrested; the latter fraction is $563/710\approx79.3\%$.</span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-threshold</span></span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: false</span></span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 6.6</span></span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 3.6</span></span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-alt: "False positives fall from 2,316 to 147 and false negatives rise from 282 to 2,246 as the threshold rises."</span></span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "Broward fitted sample: the same probabilities, classified at three cutoffs. Counts are people, not percentages."</span></span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>err <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">cut =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"0.30"</span>, <span class="st">"0.50"</span>, <span class="st">"0.70"</span>), <span class="at">each =</span> <span class="dv">2</span>),</span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>                  <span class="at">error =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"False positives"</span>, <span class="st">"False negatives"</span>), <span class="dv">3</span>),</span>
+<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>                  <span class="at">people =</span> <span class="fu">c</span>(<span class="dv">2316</span>,<span class="dv">282</span>,<span class="dv">713</span>,<span class="dv">1258</span>,<span class="dv">147</span>,<span class="dv">2246</span>))</span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(err, <span class="fu">aes</span>(cut, people, <span class="at">fill =</span> error)) <span class="sc">+</span></span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="fu">position_dodge</span>(.<span class="dv">72</span>), <span class="at">width =</span> .<span class="dv">65</span>) <span class="sc">+</span></span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">format</span>(people, <span class="at">big.mark =</span> <span class="st">","</span>, <span class="at">trim =</span> <span class="cn">TRUE</span>)),</span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a>            <span class="at">position =</span> <span class="fu">position_dodge</span>(.<span class="dv">72</span>), <span class="at">vjust =</span> <span class="sc">-</span>.<span class="dv">4</span>, <span class="at">size =</span> <span class="fl">3.8</span>) <span class="sc">+</span></span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"False positives"</span><span class="ot">=</span><span class="st">"#205879"</span>, <span class="st">"False negatives"</span><span class="ot">=</span><span class="st">"#B16B1B"</span>)) <span class="sc">+</span></span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2600</span>), <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">01</span>))) <span class="sc">+</span></span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Classification threshold"</span>, <span class="at">y =</span> <span class="st">"People"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">13</span>) <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a><span class="fu">## Proving R Works</span></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a>This calculation starts with one lecture row rather than individual records. Keeping the denominators visible helps distinguish a false alarm from a missed event.</span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: week10-metrics</span></span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>tp <span class="ot">&lt;-</span> <span class="dv">1551</span>; fp <span class="ot">&lt;-</span> <span class="dv">713</span>; fn <span class="ot">&lt;-</span> <span class="dv">1258</span>; tn <span class="ot">&lt;-</span> <span class="dv">2650</span></span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">sensitivity =</span> tp<span class="sc">/</span>(tp<span class="sc">+</span>fn), <span class="at">specificity =</span> tn<span class="sc">/</span>(tn<span class="sc">+</span>fp),</span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>        <span class="at">precision =</span> tp<span class="sc">/</span>(tp<span class="sc">+</span>fp), <span class="at">accuracy =</span> (tp<span class="sc">+</span>tn)<span class="sc">/</span>(tp<span class="sc">+</span>fp<span class="sc">+</span>fn<span class="sc">+</span>tn)), <span class="dv">3</span>)</span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a><span class="co"># In a binomial GLM, adding one coefficient to the log-odds translates back as:</span></span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">plogis</span>(<span class="fu">qlogis</span>(<span class="fu">c</span>(<span class="fl">0.488</span>, <span class="fl">0.218</span>)) <span class="sc">+</span> <span class="fl">0.160</span>), <span class="dv">3</span>)</span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a>To get the same orientation from individual predictions in R:</span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">predict</span>(recid_fit, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">predicted =</span> <span class="fu">as.integer</span>(p_hat <span class="sc">&gt;=</span> <span class="fl">0.50</span>), <span class="at">actual =</span> compas<span class="sc">$</span>two_year_recid)</span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a><span class="co"># R prints 0 before 1: find the row/column labels before reading any cell.</span></span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a>Choosing a threshold amounts to choosing which mistakes an institution is more willing to make. A false positive in a detention program can cost someone their freedom. A false positive in a voluntary support program may instead mean offering services, though resources and access still matter. The lecture contrasts a higher threshold (or questioning the use of the model) for a punitive decision with a lower threshold for offering support. Neither the fitted probabilities nor overall accuracy can decide whether a program is justified.</span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Would the burglary model rank differently against a historical baseline on the same held-out districts?</span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>How would error rates change on a different cohort, and who would bear the errors at the proposed cutoff?</span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a><span class="fu">## Sources and Scope</span></span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a>MUSA 5080, *Geographic CV + Logistic Regression I*, November 6, 2026; <span class="co">[</span><span class="ot">ProPublica data and methodology</span><span class="co">](https://github.com/propublica/compas-analysis)</span>. The figures use the inverse-logit formula and the threshold counts from the slides. The original slide image files were not included. The slides preview the ROC curve for next week; they do not report a Week 10 ROC/AUC result.</span>
+</code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
