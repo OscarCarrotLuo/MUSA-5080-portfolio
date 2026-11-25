@@ -21,8 +21,6 @@ freeze: false
 
 ## Part 1: Load and clean
 
-I use the full [NIJ Recidivism Forecasting Challenge dataset](https://nij.ojp.gov/funding/recidivism-forecasting-challenge#2-0), covering 25,835 people released to parole in Georgia in 2013–2015, with NIJ's training/test split and [codebook](https://nij.ojp.gov/funding/recidivism-forecasting-challenge-appendix-2-codebook.pdf).
-
 ```{r}
 #| label: setup
 library(tidyverse)
@@ -49,8 +47,6 @@ nij <- read_csv("data/nij_recidivism.csv") %>%
 train <- nij %>% filter(Training_Sample == 1)
 test  <- nij %>% filter(Training_Sample == 0)
 ```
-
-I code rearrest as 1 for "Yes" and 0 for "No." The parsed felony and misdemeanor counts are capped at 10 and 6, representing "10 or more" and "6 or more."
 
 ### 1.1 Sample sizes and rearrest rates
 
