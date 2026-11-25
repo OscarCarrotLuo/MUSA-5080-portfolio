@@ -3,6 +3,7 @@ title: "Assignment 6: Parole Reform"
 subtitle: "MUSA 5080 · Fall 2026"
 author: "Oscar Luo"
 date: "2026-11-25"
+output-file: A6_parole_reform.html
 description: "Rearrest prediction, parole decision thresholds, and racial differences in errors."
 format:
   html:
@@ -115,6 +116,17 @@ base_fit <- glm(recid ~ male + age_group + prison_years +
                 family = binomial,
                 data = train)
 ```
+
+<details>
+<summary>Base-model summary</summary>
+
+```{r}
+#| label: base-model-summary
+#| echo: false
+summary(base_fit)
+```
+
+</details>
 
 ### 3.1 Odds ratios
 
@@ -247,6 +259,12 @@ rates_at <- function(data, threshold) {
 
 thresholds <- seq(0.30, 0.80, by = 0.05)
 threshold_results <- map_dfr(thresholds, function(t) rates_at(test, t))
+
+threshold_results %>%
+  mutate(across(c(high_risk, sensitivity, specificity), pct)) %>%
+  knitr::kable(digits = 2,
+               col.names = c("Threshold", "Labeled high risk", "Sensitivity",
+                             "Specificity"))
 ```
 
 ```{r}
@@ -441,3 +459,34 @@ For Use B, a false negative means missing someone who could benefit from housing
 The promise to omit race does not mean equal treatment in practice. At 0.50, the false positive rate is 58.0% for Black parolees and 48.1% for white parolees, even though their rearrest rates are much closer, at 58.2% and 56.4%. At the proposed restrictive threshold of 0.70, the false positive gap narrows to 18.0% versus 14.0%, but remains. At the service threshold of 0.40, the model misses 7.8% of rearrested Black parolees and 9.8% of rearrested white parolees. Age differs across groups and can carry racial information into predictions even without a race variable.
 
 I would not deploy this for Use A, unless staff review each flagged case and people can appeal before additional restrictions are imposed.
+
+## Optional challenge: Georgia's existing score
+
+```{r}
+#| label: existing-score
+score_missing <- test %>%
+  group_by(Race) %>%
+  summarize(missing_score = sum(is.na(Supervision_Risk_Score_First)),
+            .groups = "drop")
+knitr::kable(score_missing, col.names = c("Race", "Missing initial score"))
+
+score_comparison <- test %>%
+  filter(!is.na(Supervision_Risk_Score_First)) %>%
+  mutate(state_high = as.integer(Supervision_Risk_Score_First >= 7)) %>%
+  group_by(Race) %>%
+  summarize(
+    n = n(),
+    state_fpr = sum(state_high == 1 & recid == 0) / sum(recid == 0),
+    model_fpr = sum(pred_50 == 1 & recid == 0) / sum(recid == 0),
+    state_sensitivity = sum(state_high == 1 & recid == 1) / sum(recid == 1),
+    model_sensitivity = sum(pred_50 == 1 & recid == 1) / sum(recid == 1),
+    .groups = "drop"
+  )
+
+score_comparison %>%
+  mutate(across(c(state_fpr, model_fpr, state_sensitivity, model_sensitivity), pct)) %>%
+  knitr::kable(col.names = c("Race", "People", "State FPR", "Model FPR",
+                             "State sensitivity", "Model sensitivity"))
+```
+
+The existing score is missing for **81 Black** and **64 white** test-set members. Comparing both tools on the same 7,662 people with a recorded score, Georgia's cutoff of 7 has lower false positive rates: **37.3% for Black parolees and 33.8% for white parolees**, versus **58.0% and 47.9%** for my model at 0.50. Its racial false positive gap is also smaller, **3.5 versus 10.1 percentage points**. On these measures, the state's tool performs better, although it also identifies a smaller share of those rearrested, as the sensitivity columns show.
